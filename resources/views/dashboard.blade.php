@@ -1,1076 +1,2011 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Dashboard - Sistem Informasi Pertanahan</title>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <title>SIP - Dashboard Pertanahan Nasional</title>
+    <!-- Fontawesome & Google Font -->
+    <link href="{{ asset('sbadmin/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="{{ asset('sbadmin/css/sb-admin-2.min.css') }}" rel="stylesheet">
+  
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css" rel="stylesheet">
+  
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+        .sidebar .nav-item .nav-link.active-menu {
+            background-color: rgba(255,255,255,0.1);
+            font-weight: 600;
         }
-
-        :root {
-            --primary: #10b981;
-            --primary-dark: #059669;
-            --secondary: #0ea5e9;
-            --purple: #a855f7;
-            --amber: #f59e0b;
-            --slate-50: #f8fafc;
-            --slate-100: #f1f5f9;
-            --slate-200: #e2e8f0;
-            --slate-300: #cbd5e1;
-            --slate-600: #475569;
-            --slate-700: #334155;
-            --slate-800: #1e293b;
-            --slate-900: #0f172a;
+        .modal-backdrop.show { opacity: 0.5; }
+        .badge-role, .badge-status {
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: 600;
         }
-
-        body {
-            background: linear-gradient(135deg, var(--slate-50) 0%, var(--slate-100) 100%);
-            min-height: 100vh;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 260px;
-            height: 100vh;
-            background: linear-gradient(180deg, var(--slate-800) 0%, var(--slate-900) 100%);
-            padding: 24px 16px;
-            overflow-y: auto;
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-        }
-
-        .sidebar.hidden {
-            transform: translateX(-100%);
-        }
-
-        .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 32px;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--primary);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-        }
-
-        .logo-text h1 {
-            color: white;
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .logo-text p {
-            color: var(--slate-300);
+        .table-actions .btn {
+            padding: 4px 8px;
             font-size: 12px;
         }
-
-        .menu-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            color: var(--slate-300);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            cursor: pointer;
+        .form-label-required::after {
+            content: '*';
+            color: #dc3545;
+            margin-left: 4px;
         }
-
-        .menu-item:hover {
-            background: var(--slate-700);
+        .data-master-header {
+            background: linear-gradient(135deg, #28a745, #218838);
             color: white;
         }
-
-        .menu-item.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        .table-penduduk th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
         }
-
-        .menu-item i {
-            font-size: 18px;
-            width: 20px;
+        .table-penduduk td {
+            vertical-align: middle;
         }
-
-        .bottom-menu {
-            position: absolute;
-            bottom: 24px;
-            left: 16px;
-            right: 16px;
+        .report-card {
+            border-left: 4px solid #6f42c1;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-
-        /* Main Content */
-        .main-content {
-            margin-left: 260px;
-            min-height: 100vh;
-            transition: margin-left 0.3s ease;
-        }
-
-        .main-content.full-width {
-            margin-left: 0;
-        }
-
-        /* Header */
-        .header {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--slate-200);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .menu-toggle {
-            display: none;
-            background: var(--slate-100);
-            border: none;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            color: var(--slate-700);
-            font-size: 18px;
-        }
-
-        .header-title h2 {
-            font-size: 20px;
-            color: var(--slate-800);
-            margin-bottom: 4px;
-        }
-
-        .header-title p {
-            font-size: 14px;
-            color: var(--slate-600);
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .search-box {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--slate-100);
-            padding: 8px 16px;
-            border-radius: 8px;
-        }
-
-        .search-box input {
-            border: none;
-            background: transparent;
-            outline: none;
-            width: 200px;
-            color: var(--slate-700);
-        }
-
-        .notification-btn {
-            position: relative;
-            background: var(--slate-100);
-            border: none;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            color: var(--slate-700);
-        }
-
-        .notification-badge {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            width: 8px;
-            height: 8px;
-            background: #ef4444;
-            border-radius: 50%;
-        }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: var(--slate-100);
-            padding: 8px 12px;
-            border-radius: 8px;
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--primary) 0%, #0d9488 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 14px;
-        }
-
-        .user-info p {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--slate-800);
-        }
-
-        .user-info span {
-            font-size: 12px;
-            color: var(--slate-600);
-        }
-
-        /* Container */
-        .container {
-            padding: 24px;
-        }
-
-        /* Welcome Banner */
-        .welcome-banner {
-            background: linear-gradient(135deg, var(--primary) 0%, #0d9488 100%);
-            padding: 32px;
-            border-radius: 16px;
-            color: white;
-            margin-bottom: 24px;
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2);
-            animation: fadeIn 0.6s ease;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .welcome-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 24px;
-        }
-
-        .welcome-text h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
-        }
-
-        .welcome-text p {
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 16px;
-        }
-
-        .welcome-meta {
-            display: flex;
-            gap: 24px;
-            font-size: 14px;
-        }
-
-        .welcome-meta div {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .map-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: white;
-            color: var(--primary);
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .map-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--slate-200);
-            transition: all 0.3s ease;
-            animation: fadeInUp 0.6s ease forwards;
-            opacity: 0;
-        }
-
-        .stat-card:hover {
+        .report-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
         }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .report-icon {
+            font-size: 3rem;
+            opacity: 0.8;
         }
-
-        .stat-card:nth-child(1) { animation-delay: 0s; }
-        .stat-card:nth-child(2) { animation-delay: 0.1s; }
-        .stat-card:nth-child(3) { animation-delay: 0.2s; }
-        .stat-card:nth-child(4) { animation-delay: 0.3s; }
-
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 16px;
-        }
-
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .stat-icon.emerald {
-            background: #d1fae5;
-            color: var(--primary);
-        }
-
-        .stat-icon.blue {
-            background: #dbeafe;
-            color: var(--secondary);
-        }
-
-        .stat-icon.purple {
-            background: #f3e8ff;
-            color: var(--purple);
-        }
-
-        .stat-icon.amber {
-            background: #fef3c7;
-            color: var(--amber);
-        }
-
-        .stat-change {
-            background: #d1fae5;
-            color: #059669;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--slate-800);
-            margin-bottom: 4px;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: var(--slate-600);
-        }
-
-        /* Quick Actions */
-        .quick-actions {
-            background: white;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--slate-200);
-            margin-bottom: 24px;
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--slate-800);
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .action-btn {
-            padding: 24px;
-            border-radius: 12px;
-            border: none;
+        .report-header {
+            background: linear-gradient(135deg, #6f42c1, #5a32a3);
             color: white;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: block;
         }
-
-        .action-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .action-btn.emerald {
-            background: linear-gradient(135deg, var(--primary) 0%, #0d9488 100%);
-        }
-
-        .action-btn.blue {
-            background: linear-gradient(135deg, var(--secondary) 0%, #0284c7 100%);
-        }
-
-        .action-btn.purple {
-            background: linear-gradient(135deg, var(--purple) 0%, #9333ea 100%);
-        }
-
-        .action-btn.amber {
-            background: linear-gradient(135deg, var(--amber) 0%, #d97706 100%);
-        }
-
-        .action-btn i {
-            font-size: 32px;
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        .action-btn p {
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        /* Two Column Layout */
-        .two-column {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .card {
-            background: white;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--slate-200);
-        }
-
-        .activity-item {
-            display: flex;
-            gap: 16px;
-            padding: 12px;
+        .filter-section {
+            background-color: #f8f9fc;
             border-radius: 8px;
-            margin-bottom: 12px;
-            transition: background 0.3s ease;
+            padding: 20px;
+            margin-bottom: 20px;
         }
-
-        .activity-item:hover {
-            background: var(--slate-50);
+        .stat-box {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        .activity-dot {
-            width: 8px;
-            height: 8px;
+        .stat-box h4 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stat-box p {
+            margin: 0;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        #page-pengaturan .card {
+            border: 1px solid #dee2e6 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        }
+        #page-pengaturan .card-header {
+            background-color: #f8f9fa !important;
+            border-bottom: 1px solid #dee2e6 !important;
+        }
+        #page-pengaturan .card-body {
+            padding: 20px !important;
+        }
+        #page-pengaturan .form-group {
+            margin-bottom: 15px !important;
+        }
+        #page-pengaturan .form-control {
+            width: 100% !important;
+            padding: 8px 12px !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 4px !important;
+        }
+        #page-pengaturan .btn {
+            padding: 8px 16px !important;
+            border-radius: 4px !important;
+            border: 1px solid transparent !important;
+        }
+        .profile-photo-preview {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
             border-radius: 50%;
-            margin-top: 8px;
-            flex-shrink: 0;
-        }
-
-        .activity-dot.green { background: #22c55e; }
-        .activity-dot.blue { background: var(--secondary); }
-        .activity-dot.purple { background: var(--purple); }
-        .activity-dot.amber { background: var(--amber); }
-
-        .activity-content {
-            flex: 1;
-        }
-
-        .activity-type {
-            font-weight: 600;
-            font-size: 14px;
-            color: var(--slate-800);
-            margin-bottom: 2px;
-        }
-
-        .activity-desc {
-            font-size: 13px;
-            color: var(--slate-600);
-            margin-bottom: 4px;
-        }
-
-        .activity-time {
-            font-size: 12px;
-            color: var(--slate-400);
-        }
-
-        .notification-item {
-            display: flex;
-            gap: 12px;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-        }
-
-        .notification-item.amber-bg {
-            background: #fef3c7;
-            border: 1px solid #fbbf24;
-        }
-
-        .notification-item.blue-bg {
-            background: #dbeafe;
-            border: 1px solid #60a5fa;
-        }
-
-        .notification-item.green-bg {
-            background: #d1fae5;
-            border: 1px solid #34d399;
-        }
-
-        .notification-icon {
-            font-size: 20px;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        .notification-item.amber-bg .notification-icon { color: #d97706; }
-        .notification-item.blue-bg .notification-icon { color: #2563eb; }
-        .notification-item.green-bg .notification-icon { color: #059669; }
-
-        .notification-title {
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-
-        .notification-item.amber-bg .notification-title { color: #78350f; }
-        .notification-item.blue-bg .notification-title { color: #1e3a8a; }
-        .notification-item.green-bg .notification-title { color: #064e3b; }
-
-        .notification-text {
-            font-size: 13px;
-        }
-
-        .notification-item.amber-bg .notification-text { color: #92400e; }
-        .notification-item.blue-bg .notification-text { color: #1e40af; }
-        .notification-item.green-bg .notification-text { color: #065f46; }
-
-        .view-all-btn {
-            width: 100%;
-            text-align: center;
-            padding: 12px;
-            color: var(--primary);
-            font-weight: 600;
-            font-size: 14px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .view-all-btn:hover {
-            color: var(--primary-dark);
-        }
-
-        /* Footer */
-        .footer {
-            background: white;
-            padding: 16px 24px;
-            border-top: 1px solid var(--slate-200);
-            text-align: center;
-            color: var(--slate-600);
-            font-size: 14px;
-        }
-
-        /* Overlay */
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-        }
-
-        .overlay.active {
-            display: block;
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .sidebar.active {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            .menu-toggle {
-                display: block;
-            }
-
-            .user-info {
-                display: none;
-            }
-
-            .search-box {
-                display: none;
-            }
-        }
-
-        @media (max-width: 640px) {
-            .welcome-content {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .two-column {
-                grid-template-columns: 1fr;
-            }
-
-            .actions-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+            margin-bottom: 15px;
+            border: 2px solid #dee2e6;
         }
     </style>
 </head>
-<body>
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="logo-section">
-            <div class="logo-icon">
-                <i class="fas fa-map-marked-alt"></i>
+<body id="page-top">
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="javascript:void(0)" onclick="showPage('dashboard')">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    <i class="fas fa-globe-asia"></i>
+                </div>
+                <div class="sidebar-brand-text mx-3">SIPertanahan</div>
+            </a>
+            <hr class="sidebar-divider my-0">
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0)" onclick="showPage('dashboard')" id="menu-dashboard">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider">
+            <div class="sidebar-heading">Fitur Utama</div>
+            <!-- MENU PETA PERTANAHAN -->
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url('/petnah') }}">
+                    <i class="fas fa-map-marked-alt text-warning"></i>
+                    <span>Peta Pertanahan</span>
+                </a>
+            </li>
+            <!-- MENU DATA MASTER -->
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0)" onclick="showPage('datamaster')" id="menu-datamaster">
+                    <i class="fas fa-database text-success"></i>
+                    <span>Data Master</span>
+                </a>
+            </li>
+            <!-- MENU MANAJEMEN PENGGUNA -->
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0)" onclick="showPage('users')" id="menu-users">
+                    <i class="fas fa-users-cog text-info"></i>
+                    <span>Manajemen Pengguna</span>
+                </a>
+            </li>
+            <!-- MENU LAPORAN (BARU) -->
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0)" onclick="showPage('laporan')" id="menu-laporan">
+                    <i class="fas fa-file-alt text-purple"></i>
+                    <span>Laporan</span>
+                </a>
+            </li>
+            <!-- MENU PENGATURAN -->
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0)" onclick="showPage('pengaturan')" id="menu-pengaturan">
+                    <i class="fas fa-cogs text-secondary"></i>
+                    <span>Pengaturan</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider">
+            <!-- LOGOUT -->
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-toggle="modal" data-target="#logoutModal">
+                    <i class="fas fa-sign-out-alt text-danger"></i>
+                    <span>Logout</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider d-none d-md-block">
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
             </div>
-            <div class="logo-text">
-                <h1>SIP</h1>
-                <p>Pertanahan</p>
-            </div>
-        </div>
-
-        <nav>
-            <a href="/dashboard" class="menu-item active">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="/petnah" class="menu-item">
-                <i class="fas fa-map"></i>
-                <span>Peta Pertanahan</span>
-            </a>
-            <a href="/datnah" class="menu-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <span>Data Tanah</span>
-            </a>
-            <a href="/paper" class="menu-item">
-                <i class="fas fa-file-alt"></i>
-                <span>GeoPaper</span>
-            </a>
-            <a href="/ten" class="menu-item">
-                <i class="fas fa-users"></i>
-                <span>Tentang</span>
-            </a>
-            <a href="/lap" class="menu-item">
-                <i class="fas fa-chart-bar"></i>
-                <span>Laporan</span>
-            </a>
-        </nav>
-
-        <div class="bottom-menu">
-            <a href="/set" class="menu-item">
-                <i class="fas fa-cog"></i>
-                <span>Pengaturan</span>
-            </a>
-            <a href="/logout" class="menu-item">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Keluar</span>
-            </a>
-        </div>
-    </aside>
-
-    <!-- Overlay -->
-    <div class="overlay" id="overlay"></div>
-
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="header-left">
-                    <button class="menu-toggle" id="menuToggle">
-                        <i class="fas fa-bars"></i>
+        </ul>
+        <!-- End of Sidebar -->
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div id="content">
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
                     </button>
-                    <div class="header-title">
-                        <h2>Dashboard</h2>
-                        <p>Sistem Informasi Pertanahan</p>
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{ Auth::user()->name ?? 'Admin' }}</span>
+                                <img class="img-profile rounded-circle" id="topbarProfilePhoto" src="{{ auth()->user()->profile_photo_url ?? asset('sbadmin/img/undraw_profile.svg') }}">
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>Logout
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- End Topbar -->
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+                    <!-- DASHBOARD PAGE -->
+                    <div id="page-dashboard" class="page-section active">
+                        <!-- Page Heading -->
+                        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                            <h1 class="h3 mb-0 text-gray-800">Dashboard Pertanahan Nasional</h1>
+                            <span class="text-muted">Update: {{ now()->format('d M Y') }}</span>
+                        </div>
+                        <!-- Statistik Cards -->
+                        <div class="row">
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-primary shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Penduduk</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">278,6 Juta Jiwa</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-users fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-success shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Luas Wilayah Daratan</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">1,905 Juta km²</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-mountain fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-info shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Jumlah Bidang Tanah</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">126,4 Juta Bidang</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-vector-square fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-warning shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Bidang Tersertipikat</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">82,3 Juta (65%)</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-certificate fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Chart + Mini Map Row -->
+                        <div class="row">
+                            <!-- Chart Progress Sertipikasi -->
+                            <div class="col-xl-8 col-lg-7">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary">Progress Sertipikasi Tanah Nasional (2020-2025)</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-area">
+                                            <canvas id="myAreaChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Mini Peta Indonesia -->
+                            <div class="col-xl-4 col-lg-5">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary">Peta Indonesia</h6>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Flag_of_Indonesia.svg/1280px-Flag_of_Indonesia.svg.png"
+                                             alt="Peta Indonesia" style="width:100%; max-width:300px; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1);">
+                                        <p class="mt-3 text-muted small">Klik menu <strong>Peta Pertanahan</strong> untuk melihat peta interaktif</p>
+                                        <a href="{{ url('/petnah') }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-map-marked-alt"></i> Buka Peta Lengkap
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Footer Info -->
+                        <div class="text-center py-4 text-muted">
+                            <small>© 2025 Sistem Informasi Pertanahan Nasional • Kementerian ATR/BPN</small>
+                        </div>
                     </div>
-                </div>
-                <div class="header-right">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Cari data...">
+
+                    <!-- DATA MASTER PAGE (PENDUDUK) -->
+                    <div id="page-datamaster" class="page-section">
+                        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                            <h1 class="h3 mb-0 text-gray-800">
+                                <i class="fas fa-database text-success"></i> Data Master - Penduduk
+                            </h1>
+                            <div class="d-flex align-items-center">
+                                <input type="text" id="searchPenduduk" class="form-control mr-2" style="max-width: 200px;" placeholder="Cari NIK/Nama...">
+                                <button class="btn btn-success btn-sm" onclick="openPendudukModal('add')">
+                                    <i class="fas fa-plus"></i> Tambah Penduduk
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3 data-master-header">
+                                <h6 class="m-0 font-weight-bold">Daftar Penduduk Terdaftar</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover table-penduduk" id="pendudukTable" width="100%">
+                                        <thead>
+                                            <tr>
+                                                <th width="5%">No</th>
+                                                <th width="15%">NIK</th>
+                                                <th width="20%">Nama Lengkap</th>
+                                                <th width="25%">Alamat</th>
+                                                <th width="10%">RT/RW</th>
+                                                <th width="15%">Provinsi</th>
+                                                <th width="10%">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pendudukTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <button class="notification-btn">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-badge"></span>
-                    </button>
-                    <div class="user-profile">
-                        <div class="user-avatar">A</div>
-                        <div class="user-info">
-                            <p>Admin</p>
-                            <span>Administrator</span>
+
+                    <!-- USER MANAGEMENT PAGE -->
+                    <div id="page-users" class="page-section">
+                        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                            <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-users-cog text-info"></i> Manajemen Pengguna</h1>
+                            <button class="btn btn-primary btn-sm" onclick="openUserModal('add')">
+                                <i class="fas fa-plus"></i> Tambah Pengguna
+                            </button>
+                        </div>
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Daftar Pengguna Sistem</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover" id="usersTable" width="100%">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th width="5%">No</th>
+                                                <th width="20%">Nama</th>
+                                                <th width="20%">Email</th>
+                                                <th width="10%">Role</th>
+                                                <th width="12%">Status</th>
+                                                <th width="10%">Bahasa</th>
+                                                <th width="13%">Terdaftar</th>
+                                                <th width="10%">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="userTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Invitation Form Card -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-success">Kirim Undangan Pengguna Baru</h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="inviteForm">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="inviteName" class="form-label form-label-required">Nama Lengkap</label>
+                                                <input type="text" class="form-control" id="inviteName" name="name" required placeholder="Masukkan nama lengkap">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="inviteEmail" class="form-label form-label-required">Email</label>
+                                                <input type="email" class="form-control" id="inviteEmail" name="email" required placeholder="contoh@email.com">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label for="inviteRole" class="form-label form-label-required">Role</label>
+                                                <select class="form-control" id="inviteRole" name="role" required>
+                                                    <option value="user">User</option>
+                                                    <option value="staff">Staff</option>
+                                                    <option value="admin">Admin</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group">
+                                                <label>&nbsp;</label>
+                                                <div class="d-flex">
+                                                    <button type="submit" class="btn btn-success" id="sendInviteBtn">
+                                                        <i class="fas fa-paper-plane"></i> Kirim Undangan
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle"></i> Email undangan akan dikirim dengan kode verifikasi unik.
+                                                Pengguna baru dapat mendaftar menggunakan link yang disediakan dalam email.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LAPORAN PAGE (BARU) -->
+                    <div id="page-laporan" class="page-section">
+                        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                            <h1 class="h3 mb-0 text-gray-800">
+                                <i class="fas fa-file-alt text-purple"></i> Pusat Laporan Pertanahan
+                            </h1>
+                            <span class="text-muted">Sistem Pelaporan Terintegrasi</span>
+                        </div>
+                        <div class="filter-section">
+                            <h6 class="font-weight-bold mb-3"><i class="fas fa-filter"></i> Filter Laporan</h6>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Periode Dari</label>
+                                        <input type="date" class="form-control" id="filterStartDate">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Periode Sampai</label>
+                                        <input type="date" class="form-control" id="filterEndDate">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Provinsi</label>
+                                        <select class="form-control" id="filterProvinsi">
+                                            <option value="">Semua Provinsi</option>
+                                            <option value="DKI Jakarta">DKI Jakarta</option>
+                                            <option value="Jawa Barat">Jawa Barat</option>
+                                            <option value="Jawa Tengah">Jawa Tengah</option>
+                                            <option value="Jawa Timur">Jawa Timur</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <button class="btn btn-primary btn-block" onclick="applyReportFilter()">
+                                            <i class="fas fa-search"></i> Terapkan Filter
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Statistics Overview -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="stat-box border-left-primary">
+                                    <p class="text-primary mb-1">Total Laporan</p>
+                                    <h4 class="text-primary">2,847</h4>
+                                    <small class="text-success"><i class="fas fa-arrow-up"></i> +12% dari bulan lalu</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-box border-left-success">
+                                    <p class="text-success mb-1">Laporan Selesai</p>
+                                    <h4 class="text-success">2,103</h4>
+                                    <small class="text-muted">74% completion rate</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-box border-left-warning">
+                                    <p class="text-warning mb-1">Dalam Proses</p>
+                                    <h4 class="text-warning">581</h4>
+                                    <small class="text-muted">20% dari total</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-box border-left-danger">
+                                    <p class="text-danger mb-1">Perlu Tindakan</p>
+                                    <h4 class="text-danger">163</h4>
+                                    <small class="text-danger"><i class="fas fa-exclamation-circle"></i> Prioritas tinggi</small>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Report Types Cards -->
+                        <div class="row">
+                            <!-- Laporan Penduduk -->
+                            <div class="col-lg-4 mb-4">
+                                <div class="card report-card shadow h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="font-weight-bold text-primary mb-0">Laporan Penduduk</h5>
+                                            <i class="fas fa-users report-icon text-primary"></i>
+                                        </div>
+                                        <p class="text-muted mb-3">Laporan data demografi dan statistik kependudukan berdasarkan wilayah dan periode tertentu</p>
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Total Data: <strong>278.6 Juta</strong></small>
+                                            <small class="text-muted d-block">Update Terakhir: <strong>04 Des 2025</strong></small>
+                                        </div>
+                                        <button class="btn btn-primary btn-block" onclick="generateLaporanPenduduk()">
+                                            <i class="fas fa-file-download"></i> Generate Laporan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Laporan Lahan -->
+                            <div class="col-lg-4 mb-4">
+                                <div class="card report-card shadow h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="font-weight-bold text-success mb-0">Laporan Lahan</h5>
+                                            <i class="fas fa-map-marked-alt report-icon text-success"></i>
+                                        </div>
+                                        <p class="text-muted mb-3">Laporan kepemilikan, sertifikasi, dan status penggunaan lahan pertanahan nasional</p>
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Total Bidang: <strong>126.4 Juta</strong></small>
+                                            <small class="text-muted d-block">Tersertifikasi: <strong>65%</strong></small>
+                                        </div>
+                                        <button class="btn btn-success btn-block" onclick="generateLaporanLahan()">
+                                            <i class="fas fa-file-download"></i> Generate Laporan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Laporan Sertifikasi -->
+                            <div class="col-lg-4 mb-4">
+                                <div class="card report-card shadow h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="font-weight-bold text-warning mb-0">Laporan Sertifikasi</h5>
+                                            <i class="fas fa-certificate report-icon text-warning"></i>
+                                        </div>
+                                        <p class="text-muted mb-3">Laporan progress dan statistik proses sertifikasi tanah berdasarkan wilayah dan tahun</p>
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Target 2025: <strong>10 Juta</strong></small>
+                                            <small class="text-muted d-block">Tercapai: <strong>7.2 Juta (72%)</strong></small>
+                                        </div>
+                                        <button class="btn btn-warning btn-block" onclick="generateLaporanSertifikasi()">
+                                            <i class="fas fa-file-download"></i> Generate Laporan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Laporan Pengguna -->
+                            <div class="col-lg-4 mb-4">
+                                <div class="card report-card shadow h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="font-weight-bold text-info mb-0">Laporan Pengguna</h5>
+                                            <i class="fas fa-users-cog report-icon text-info"></i>
+                                        </div>
+                                        <p class="text-muted mb-3">Laporan aktivitas dan manajemen pengguna sistem informasi pertanahan</p>
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Total Pengguna: <strong>1,247</strong></small>
+                                            <small class="text-muted d-block">Aktif Hari Ini: <strong>832</strong></small>
+                                        </div>
+                                        <button class="btn btn-info btn-block" onclick="generateLaporanPengguna()">
+                                            <i class="fas fa-file-download"></i> Generate Laporan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Laporan Transaksi -->
+                            <div class="col-lg-4 mb-4">
+                                <div class="card report-card shadow h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="font-weight-bold text-danger mb-0">Laporan Transaksi</h5>
+                                            <i class="fas fa-exchange-alt report-icon text-danger"></i>
+                                        </div>
+                                        <p class="text-muted mb-3">Laporan transaksi jual beli, hibah, waris dan perpindahan hak atas tanah</p>
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Transaksi Bulan Ini: <strong>45,812</strong></small>
+                                            <small class="text-muted d-block">Nilai: <strong>Rp 2.4 Triliun</strong></small>
+                                        </div>
+                                        <button class="btn btn-danger btn-block" onclick="generateLaporanTransaksi()">
+                                            <i class="fas fa-file-download"></i> Generate Laporan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Laporan Sistem -->
+                            <div class="col-lg-4 mb-4">
+                                <div class="card report-card shadow h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="font-weight-bold text-secondary mb-0">Laporan Sistem</h5>
+                                            <i class="fas fa-cogs report-icon text-secondary"></i>
+                                        </div>
+                                        <p class="text-muted mb-3">Laporan performa sistem, log aktivitas, dan maintenance log</p>
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Uptime: <strong>99.98%</strong></small>
+                                            <small class="text-muted d-block">Log Terbaru: <strong>04 Des 2025</strong></small>
+                                        </div>
+                                        <button class="btn btn-secondary btn-block" onclick="generateLaporanSistem()">
+                                            <i class="fas fa-file-download"></i> Generate Laporan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PENGATURAN PAGE -->
+                    <div id="page-pengaturan" class="page-section">
+                        <!-- Page Heading -->
+                        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                            <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-cogs text-secondary"></i> Pengaturan & Profil Akun</h1>
+                            <span class="text-muted">Kelola akun Anda - {{ auth()->user()->name }}</span>
+                        </div>
+                        <!-- Profile Info Card -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <i class="fas fa-user-circle"></i> Informasi Profil - {{ auth()->user()->name }}
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover" width="100%">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th width="5%">No</th>
+                                                <th width="20%">Nama Lengkap</th>
+                                                <th width="25%">Email</th>
+                                                <th width="10%">Role</th>
+                                                <th width="12%">Status</th>
+                                                <th width="10%">Bahasa</th>
+                                                <th width="13%">Bergabung</th>
+                                                <th width="5%">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="text-center">1</td>
+                                                <td><strong>{{ auth()->user()->name }}</strong></td>
+                                                <td>{{ auth()->user()->email }}</td>
+                                                <td>
+                                                    <span class="badge badge-role {{ auth()->user()->getRoleNames()->first() === 'admin' ? 'badge-danger' : (auth()->user()->getRoleNames()->first() === 'staff' ? 'badge-warning' : 'badge-info') }}">
+                                                        {{ auth()->user()->getRoleNames()->first() ?? 'user' }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-status {{ auth()->user()->is_approved ? 'badge-success' : 'badge-warning' }}">
+                                                        {{ auth()->user()->is_approved ? 'Disetujui' : 'Pending' }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ auth()->user()->language_preference === 'id' ? 'Indonesia' : 'English' }}</td>
+                                                <td>{{ auth()->user()->created_at->format('d M Y') }}</td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-sm btn-warning" onclick="editProfile()">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Profile Edit Form Card -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-success">
+                                    <i class="fas fa-edit"></i> Edit Profil & Pengaturan
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="profileForm" enctype="multipart/form-data">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="row">
+                                        <div class="col-md-3 text-center">
+                                            <img id="profilePhotoPreview" class="profile-photo-preview" src="{{ auth()->user()->profile_photo_url ?? asset('sbadmin/img/undraw_profile.svg') }}" alt="Foto Profil">
+                                            <div class="form-group">
+                                                <label for="profile_photo">Ubah Foto Profil</label>
+                                                <input type="file" class="form-control-file" id="profile_photo" name="profile_photo" accept="image/*">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <div class="form-group">
+                                                        <label for="name" class="form-label form-label-required">Nama Lengkap</label>
+                                                        <input type="text" class="form-control" id="name" name="name"
+                                                               value="{{ auth()->user()->name }}" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="form-group">
+                                                        <label for="email" class="form-label form-label-required">Email</label>
+                                                        <input type="email" class="form-control" id="email" name="email"
+                                                               value="{{ auth()->user()->email }}" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="form-group">
+                                                        <label for="language">Bahasa Interface</label>
+                                                        <select class="form-control" id="language" name="language_preference">
+                                                            <option value="id" {{ auth()->user()->language_preference == 'id' ? 'selected' : '' }}>
+                                                                Indonesia
+                                                            </option>
+                                                            <option value="en" {{ auth()->user()->language_preference == 'en' ? 'selected' : '' }}>
+                                                                English
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="current_password_profile">Password Saat Ini (untuk konfirmasi)</label>
+                                                <input type="password" class="form-control" id="current_password_profile"
+                                                       name="current_password" placeholder="Masukkan password saat ini">
+                                                <small class="form-text text-muted">Diperlukan untuk mengubah data profil</small>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary" id="saveProfileBtn">
+                                                Simpan Perubahan Profil
+                                            </button>
+                                            <button type="button" class="btn btn-info ml-2" id="changeLanguageBtn">
+                                                Ubah Bahasa
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- Password Change Card -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-warning">
+                                    Ubah Password Akun
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="passwordForm">
+                                    @csrf
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="current_password" class="form-label form-label-required">Password Saat Ini</label>
+                                                <input type="password" class="form-control" id="current_password"
+                                                       name="current_password" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="password" class="form-label form-label-required">Password Baru</label>
+                                                <input type="password" class="form-control" id="password"
+                                                       name="password" minlength="6" required>
+                                                <small class="form-text text-muted">Minimal 6 karakter</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="password_confirmation" class="form-label form-label-required">Konfirmasi Password Baru</label>
+                                                <input type="password" class="form-control" id="password_confirmation"
+                                                       name="password_confirmation" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning" id="changePasswordBtn">
+                                        Ubah Password
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- Account Statistics Overview -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="stat-box border-left-primary">
+                                    <p class="text-primary mb-1">Total Login</p>
+                                    <h4 class="text-primary">127</h4>
+                                    <small class="text-success">+12% dari bulan lalu</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-box border-left-success">
+                                    <p class="text-success mb-1">Aktivitas</p>
+                                    <h4 class="text-success">89%</h4>
+                                    <small class="text-muted">Tingkat aktif</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-box border-left-warning">
+                                    <p class="text-warning mb-1">Pengaturan</p>
+                                    <h4 class="text-warning">12</h4>
+                                    <small class="text-muted">Diubah bulan ini</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-box border-left-danger">
+                                    <p class="text-danger mb-1">Notifikasi</p>
+                                    <h4 class="text-danger">5</h4>
+                                    <small class="text-danger">Belum dibaca</small>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tambahan Fitur Pengaturan Lainnya (Lengkapin) -->
+                        <!-- Card Pengaturan Notifikasi -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-info">
+                                    Pengaturan Notifikasi
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="notifForm">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="emailNotif" checked>
+                                            <label class="custom-control-label" for="emailNotif">Aktifkan Notifikasi Email</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="pushNotif">
+                                            <label class="custom-control-label" for="pushNotif">Aktifkan Notifikasi Push</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="notifFrequency">Frekuensi Notifikasi</label>
+                                        <select class="form-control" id="notifFrequency">
+                                            <option>Harian</option>
+                                            <option>Mingguan</option>
+                                            <option>Bulanan</option>
+                                            <option>Tidak Pernah</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-info">
+                                        Simpan Pengaturan Notifikasi
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- Card Pengaturan Keamanan -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-danger">
+                                    Pengaturan Keamanan
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="securityForm">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="twoFactor" checked>
+                                            <label class="custom-control-label" for="twoFactor">Aktifkan Autentikasi Dua Faktor</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="securityQuestion">Pertanyaan Keamanan</label>
+                                        <select class="form-control" id="securityQuestion">
+                                            <option>Nama hewan peliharaan pertama Anda?</option>
+                                            <option>Nama sekolah dasar Anda?</option>
+                                            <option>Kota kelahiran ibu Anda?</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="securityAnswer">Jawaban</label>
+                                        <input type="text" class="form-control" id="securityAnswer" placeholder="Masukkan jawaban">
+                                    </div>
+                                    <button type="submit" class="btn btn-danger">
+                                        Simpan Pengaturan Keamanan
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- Card Pengaturan Tema -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    Pengaturan Tema & Tampilan
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="themeForm">
+                                    <div class="form-group">
+                                        <label for="themeMode">Mode Tema</label>
+                                        <select class="form-control" id="themeMode">
+                                            <option value="light">Terang</option>
+                                            <option value="dark">Gelap</option>
+                                            <option value="auto">Auto (Ikuti Sistem)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="fontSize">Ukuran Font</label>
+                                        <select class="form-control" id="fontSize">
+                                            <option>Kecil</option>
+                                            <option>Sedang</option>
+                                            <option>Besar</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="highContrast">
+                                            <label class="custom-control-label" for="highContrast">Mode Kontras Tinggi</label>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        Simpan Pengaturan Tema
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </header>
-
-        <!-- Dashboard Content -->
-        <div class="container">
-            <!-- Welcome Banner -->
-            <div class="welcome-banner">
-                <div class="welcome-content">
-                    <div class="welcome-text">
-                        <h1>Selamat Datang! 👋</h1>
-                        <p>Sistem Informasi Pertanahan - Kelola data pertanahan dengan mudah dan efisien</p>
-                        <div class="welcome-meta">
-                            <div>
-                                <i class="fas fa-calendar"></i>
-                                <span id="currentDate"></span>
-                            </div>
-                            <div>
-                                <i class="fas fa-clock"></i>
-                                <span id="currentTime"></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <a href="/peta" class="map-btn">
-                            <i class="fas fa-map"></i>
-                            <span>Buka Peta</span>
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Statistics Cards -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon emerald">
-                            <i class="fas fa-map-marker-alt"></i>
-                        </div>
-                        <span class="stat-change">+12%</span>
-                    </div>
-                    <div class="stat-value">2,847</div>
-                    <div class="stat-label">Total Bidang Tanah</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon blue">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                        <span class="stat-change">+8%</span>
-                    </div>
-                    <div class="stat-value">2,634</div>
-                    <div class="stat-label">Sertifikat Terdaftar</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon purple">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <span class="stat-change">+5%</span>
-                    </div>
-                    <div class="stat-value">1,892</div>
-                    <div class="stat-label">Pemilik Terdaftar</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-icon amber">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <span class="stat-change">+3%</span>
-                    </div>
-                    <div class="stat-value">15,432</div>
-                    <div class="stat-label">Luas Total (Ha)</div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="quick-actions">
-                <h3 class="section-title">
-                    <i class="fas fa-bolt"></i>
-                    Aksi Cepat
-                </h3>
-                <div class="actions-grid">
-                    <a href="/peta" class="action-btn emerald">
-                        <i class="fas fa-map"></i>
-                        <p>Buka Peta</p>
-                    </a>
-                    <a href="/petnah" class="action-btn blue">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <p>Data Tanah</p>
-                    </a>
-                    <a href="/paper" class="action-btn purple">
-                        <i class="fas fa-file-alt"></i>
-                        <p>GeoPaper</p>
-                    </a>
-                    <a href="/lap" class="action-btn amber">
-                        <i class="fas fa-chart-bar"></i>
-                        <p>Laporan</p>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Activities & Notifications -->
-            <div class="two-column">
-                <!-- Recent Activities -->
-                <div class="card">
-                    <h3 class="section-title">
-                        <i class="fas fa-clock"></i>
-                        Aktivitas Terbaru
-                    </h3>
-                    <div>
-                        <div class="activity-item">
-                            <div class="activity-dot green"></div>
-                            <div class="activity-content">
-                                <div class="activity-type">Pendaftaran</div>
-                                <div class="activity-desc">Sertifikat baru #SRT-2024-001</div>
-                                <div class="activity-time">10 menit lalu</div>
-                            </div>
-                        </div>
-
-                        <div class="activity-item">
-                            <div class="activity-dot blue"></div>
-                            <div class="activity-content">
-                                <div class="activity-type">Perubahan</div>
-                                <div class="activity-desc">Update data bidang tanah A-123</div>
-                                <div class="activity-time">25 menit lalu</div>
-                            </div>
-                        </div>
-
-                        <div class="activity-item">
-                            <div class="activity-dot purple"></div>
-                            <div class="activity-content">
-                                <div class="activity-type">Verifikasi</div>
-                                <div class="activity-desc">Validasi dokumen kepemilikan</div>
-                                <div class="activity-time">1 jam lalu</div>
-                            </div>
-                        </div>
-
-                        <div class="activity-item">
-                            <div class="activity-dot green"></div>
-                            <div class="activity-content">
-                                <div class="activity-type">Pendaftaran</div>
-                                <div class="activity-desc">Sertifikat baru #SRT-2024-002</div>
-                                <div class="activity-time">2 jam lalu</div>
-                            </div>
-                        </div>
-
-                        <div class="activity-item">
-                            <div class="activity-dot amber"></div>
-                            <div class="activity-content">
-                                <div class="activity-type">Laporan</div>
-                                <div class="activity-desc">Generate laporan bulanan</div>
-                                <div class="activity-time">3 jam lalu</div>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="view-all-btn">Lihat Semua Aktivitas →</button>
-                </div>
-
-                <!-- Notifications -->
-                <div class="card">
-                    <h3 class="section-title">
-                        <i class="fas fa-bell"></i>
-                        Notifikasi
-                    </h3>
-                    <div>
-                        <div class="notification-item amber-bg">
-                            <div class="notification-icon">
-                                <i class="fas fa-exclamation-circle"></i>
-                            </div>
-                            <div class="notification-content">
-                                <div class="notification-title">Reminder</div>
-                                <div class="notification-text">5 sertifikat akan berakhir masa berlakunya dalam 30 hari</div>
-                            </div>
-                        </div>
-
-                        <div class="notification-item blue-bg">
-                            <div class="notification-icon">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-                            <div class="notification-content">
-                                <div class="notification-title">Dokumen Baru</div>
-                                <div class="notification-text">3 dokumen menunggu verifikasi Anda</div>
-                            </div>
-                        </div>
-
-                        <div class="notification-item green-bg">
-                            <div class="notification-icon">
-                                <i class="fas fa-chart-line"></i>
-                            </div>
-                            <div class="notification-content">
-                                <div class="notification-title">Update Sistem</div>
-                                <div class="notification-text">Sistem berhasil diperbarui ke versi 2.1.0</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
+    </div>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <div>© 2024 Sistem Informasi Pertanahan. All rights reserved.</div>
-        </footer>
-    </main>
+    <!-- PENDUDUK MODAL -->
+    <div class="modal fade" id="pendudukModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pendudukModalTitle">Tambah Penduduk</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="pendudukForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="pendudukId" name="id">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="pendudukNik" class="form-label form-label-required">NIK</label>
+                                    <input type="text" class="form-control" id="pendudukNik" name="nik" required maxlength="16" placeholder="16 digit NIK">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="pendudukNama" class="form-label form-label-required">Nama Lengkap</label>
+                                    <input type="text" class="form-control" id="pendudukNama" name="nama" required placeholder="Nama lengkap">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="pendudukAlamat" class="form-label form-label-required">Alamat</label>
+                            <textarea class="form-control" id="pendudukAlamat" name="alamat" rows="3" required placeholder="Alamat lengkap"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="pendudukRt" class="form-label form-label-required">RT</label>
+                                    <input type="text" class="form-control" id="pendudukRt" name="rt" required maxlength="3" placeholder="001">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="pendudukRw" class="form-label form-label-required">RW</label>
+                                    <input type="text" class="form-control" id="pendudukRw" name="rw" required maxlength="3" placeholder="001">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="pendudukProvinsi" class="form-label form-label-required">Provinsi</label>
+                                    <select class="form-control" id="pendudukProvinsi" name="provinsi" required>
+                                        <option value="">Pilih Provinsi</option>
+                                        <option value="Aceh">Aceh</option>
+                                        <option value="Sumatera Utara">Sumatera Utara</option>
+                                        <option value="Sumatera Utara">Sumatera Utara</option>
+                                        <option value="Sumatera Barat">Sumatera Barat</option>
+                                        <option value="Riau">Riau</option>
+                                        <option value="Kepulauan Riau">Kepulauan Riau</option>
+                                        <option value="Jambi">Jambi</option>
+                                        <option value="Sumatera Selatan">Sumatera Selatan</option>
+                                        <option value="Bangka Belitung">Bangka Belitung</option>
+                                        <option value="Bengkulu">Bengkulu</option>
+                                        <option value="Lampung">Lampung</option>
+                                        <option value="DKI Jakarta">DKI Jakarta</option>
+                                        <option value="Jawa Barat">Jawa Barat</option>
+                                        <option value="Banten">Banten</option>
+                                        <option value="Jawa Tengah">Jawa Tengah</option>
+                                        <option value="DI Yogyakarta">DI Yogyakarta</option>
+                                        <option value="Jawa Timur">Jawa Timur</option>
+                                        <option value="Bali">Bali</option>
+                                        <option value="Nusa Tenggara Barat">Nusa Tenggara Barat</option>
+                                        <option value="Nusa Tenggara Timur">Nusa Tenggara Timur</option>
+                                        <option value="Kalimantan Barat">Kalimantan Barat</option>
+                                        <option value="Kalimantan Tengah">Kalimantan Tengah</option>
+                                        <option value="Kalimantan Selatan">Kalimantan Selatan</option>
+                                        <option value="Kalimantan Timur">Kalimantan Timur</option>
+                                        <option value="Kalimantan Utara">Kalimantan Utara</option>
+                                        <option value="Sulawesi Utara">Sulawesi Utara</option>
+                                        <option value="Gorontalo">Gorontalo</option>
+                                        <option value="Sulawesi Tengah">Sulawesi Tengah</option>
+                                        <option value="Sulawesi Barat">Sulawesi Barat</option>
+                                        <option value="Sulawesi Tenggara">Sulawesi Tenggara</option>
+                                        <option value="Sulawesi Selatan">Sulawesi Selatan</option>
+                                        <option value="Maluku">Maluku</option>
+                                        <option value="Maluku Utara">Maluku Utara</option>
+                                        <option value="Papua Barat">Papua Barat</option>
+                                        <option value="Papua">Papua</option>
+                                        <option value="Papua Tengah">Papua Tengah</option>
+                                        <option value="Papua Pegunungan">Papua Pegunungan</option>
+                                        <option value="Papua Selatan">Papua Selatan</option>
+                                        <option value="Papua Barat Daya">Papua Barat Daya</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label for="pendudukLatitude" class="form-label">Latitude</label>
+                                    <input type="text" class="form-control" id="pendudukLatitude" name="latitude" placeholder="-6.123456">
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label for="pendudukLongitude" class="form-label">Longitude</label>
+                                    <input type="text" class="form-control" id="pendudukLongitude" name="longitude" placeholder="106.123456">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="button" class="btn btn-info btn-block" id="getLocationBtn">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <small id="locationStatus" class="text-muted"></small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary" id="submitPendudukBtn">
+                            Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-    <!-- JavaScript -->
+    <!-- USER MODAL -->
+    <div class="modal fade" id="userModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalTitle">Tambah Pengguna Baru</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="userForm" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" id="formAction" value="add">
+                        <input type="hidden" id="userId" name="id">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="userName" class="form-label form-label-required">Nama Lengkap</label>
+                                    <input type="text" class="form-control" id="userName" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="userEmail" class="form-label form-label-required">Email</label>
+                                    <input type="email" class="form-control" id="userEmail" name="email" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="userPassword" class="form-label" id="passwordRequired">Password</label>
+                                    <input type="password" class="form-control" id="userPassword" name="password">
+                                    <small id="passwordHint" class="form-text text-muted">Min. 6 karakter</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="userRole" class="form-label form-label-required">Role</label>
+                                    <select class="form-control" id="userRole" name="role" required>
+                                        <option value="user">User</option>
+                                        <option value="staff">Staff</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="userLanguage" class="form-label">Bahasa</label>
+                                    <select class="form-control" id="userLanguage" name="language_preference">
+                                        <option value="id">Indonesia</option>
+                                        <option value="en">English</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="userApproved" class="form-label">Status Persetujuan</label>
+                                    <select class="form-control" id="userApproved" name="is_approved">
+                                        <option value="1">Disetujui</option>
+                                        <option value="0">Pending</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="userReason" class="form-label">Alasan Registrasi</label>
+                            <textarea class="form-control" id="userReason" name="registration_reason" rows="3" placeholder="Opsional"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary" id="submitUserBtn">
+                            Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Yakin ingin keluar?</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">Pilih "Logout" untuk mengakhiri sesi.</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <a class="btn btn-primary" href="{{ route('logout') }}"
+                       onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                        Logout
+                    </a>
+                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LENGKAP + FITUR BARU SEMUA JALAN -->
     <script>
-        // Menu Toggle
-        const menuToggle = document.getElementById('menuToggle');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        const mainContent = document.getElementById('mainContent');
-
-        menuToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
+        // Sidebar toggle (fix)
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            document.body.classList.toggle('sidebar-toggled');
+            document.getElementById('accordionSidebar').classList.toggle('toggled');
+        });
+        document.getElementById('sidebarToggleTop').addEventListener('click', function() {
+            document.body.classList.toggle('sidebar-toggled');
+            document.getElementById('accordionSidebar').classList.toggle('toggled');
         });
 
-        overlay.addEventListener('click', function() {
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
-
-        // Update Time
-        function updateTime() {
-            const now = new Date();
-            
-            // Format Date
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const dateStr = now.toLocaleDateString('id-ID', options);
-            document.getElementById('currentDate').textContent = dateStr;
-            
-            // Format Time
-            const timeStr = now.toLocaleTimeString('id-ID', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            document.getElementById('currentTime').textContent = timeStr;
+        function showPage(pageId) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.querySelectorAll('#accordionSidebar .nav-link').forEach(link => link.classList.remove('active-menu'));
+            document.getElementById('menu-' + pageId)?.classList.add('active-menu');
         }
 
-        // Update time immediately and then every second
-        updateTime();
-        setInterval(updateTime, 1000);
+        // PENDUDUK - URL penduduk/penduduk
+        function loadPenduduk(query = '') {
+            fetch(`/penduduk/penduduk${query ? '?search=' + encodeURIComponent(query) : ''}`)
+                .then(r => r.json())
+                .then(data => {
+                    const tbody = document.getElementById('pendudukTableBody');
+                    tbody.innerHTML = '';
+                    if (data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Data tidak ditemukan</td></tr>`;
+                        return;
+                    }
+                    data.forEach((p, i) => {
+                        tbody.innerHTML += `<tr>
+                            <td>${i+1}</td>
+                            <td>${p.nik}</td>
+                            <td>${p.nama}</td>
+                            <td>${p.alamat}</td>
+                            <td>${p.rt}/${p.rw}</td>
+                            <td>${p.provinsi}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick="openPendudukModal('edit', ${JSON.stringify(p)})">Edit</button>
+                                <button class="btn btn-sm btn-danger" onclick="if(confirm('Yakin hapus?')) fetch('/penduduk/penduduk/${p.id}', {method:'DELETE', headers:{'X-CSRF-TOKEN':'{{csrf_token()}}'}}).then(()=>loadPenduduk())">Hapus</button>
+                            </td>
+                        </tr>`;
+                    });
+                });
+        }
 
-        // Smooth scroll for internal links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth'
+        document.getElementById('searchPenduduk').addEventListener('keyup', e => loadPenduduk(e.target.value));
+
+        function openPendudukModal(mode, data = {}) {
+            const modal = $('#pendudukModal');
+            modal.find('.modal-title').text(mode === 'add' ? 'Tambah Penduduk' : 'Edit Penduduk');
+            modal.find('#pendudukId').val(data.id || '');
+            modal.find('[name="nik"]').val(data.nik || '');
+            modal.find('[name="nama"]').val(data.nama || '');
+            modal.find('[name="alamat"]').val(data.alamat || '');
+            modal.find('[name="rt"]').val(data.rt || '');
+            modal.find('[name="rw"]').val(data.rw || '');
+            modal.find('[name="provinsi"]').val(data.provinsi || '');
+            modal.modal('show');
+        }
+
+        document.getElementById('pendudukForm').onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const id = formData.get('id');
+            const url = id ? `/penduduk/penduduk/${id}` : '/penduduk/penduduk';
+            const method = id ? 'PUT' : 'POST';
+
+            fetch(url, {method, body: formData, headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}})
+                .then(r => r.json())
+                .then(d => {
+                    Swal.fire('Sukses!', 'Data penduduk berhasil disimpan', 'success');
+                    $('#pendudukModal').modal('hide');
+                    loadPenduduk();
+                });
+        };
+
+        // USER - URL users/list
+        function loadUsers(query = '') {
+            fetch(`/users/list${query ? '?search=' + encodeURIComponent(query) : ''}`)
+                .then(r => r.json())
+                .then(data => {
+                    const tbody = document.getElementById('userTableBody');
+                    tbody.innerHTML = '';
+                    if (data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Data tidak ditemukan</td></tr>`;
+                        return;
+                    }
+                    data.forEach((u, i) => {
+                        tbody.innerHTML += `<tr>
+                            <td>${i+1}</td>
+                            <td>${u.name}</td>
+                            <td>${u.email}</td>
+                            <td>${u.role}</td>
+                            <td>${u.is_approved ? 'Aktif' : 'Pending'}</td>
+                            <td>${u.language_preference === 'id' ? 'Indonesia' : 'English'}</td>
+                            <td>${new Date(u.created_at).toLocaleDateString('id-ID')}</td>
+                            <td><button class="btn btn-sm btn-warning" onclick="openUserModal('edit', ${JSON.stringify(u)})">Edit</button></td>
+                        </tr>`;
+                    });
+                });
+        }
+
+        document.getElementById('searchUsers').addEventListener('keyup', e => loadUsers(e.target.value));
+
+        // Foto profil update
+        document.getElementById('profile_photo').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                document.getElementById('profilePhotoPreview').src = ev.target.result;
+                document.getElementById('topbarProfilePhoto').src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            const fd = new FormData();
+            fd.append('profile_photo', file);
+            fd.append('_token', '{{ csrf_token() }}');
+            fetch('{{ route("profile.photo") }}', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(d => {
+                    if(d.success) {
+                        const url = d.profile_photo_url;
+                        document.getElementById('topbarProfilePhoto').src = url;
+                        document.getElementById('profilePhotoPreview').src = url;
+                        // Store updated photo URL in localStorage for other pages
+                        localStorage.setItem('userProfilePhotoUrl', url);
+                    }
+                });
+        });
+
+        // Check for updated profile photo from localStorage
+        $(document).ready(function() {
+            const storedPhotoUrl = localStorage.getItem('userProfilePhotoUrl');
+            if (storedPhotoUrl && document.getElementById('topbarProfilePhoto')) {
+                document.getElementById('topbarProfilePhoto').src = storedPhotoUrl;
+            }
+        });
+
+        // Init
+        loadPenduduk();
+        loadUsers();
+    </script>
+
+    <script src="{{ asset('sbadmin/vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('sbadmin/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('sbadmin/js/sb-admin-2.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>
+    <!-- Scripts -->
+    <script src="{{ asset('sbadmin/vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('sbadmin/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('sbadmin/vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+    <script src="{{ asset('sbadmin/js/sb-admin-2.min.js') }}"></script>
+    <script src="{{ asset('sbadmin/vendor/chart.js/Chart.min.js') }}"></script>
+    
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+        // Setup CSRF Token untuk AJAX
+        $.ajaxSetup({
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+        });
+
+        let dataTable, pendudukTable;
+
+        // Page Navigation
+        function showPage(page) {
+            $('.page-section').removeClass('active');
+            $('#page-' + page).addClass('active');
+            $('.sidebar .nav-link').removeClass('active-menu');
+            $('#menu-' + page).addClass('active-menu');
+
+            // Force visibility for settings page
+            if (page === 'pengaturan') {
+                $('#page-pengaturan').show();
+            }
+
+            if (page === 'users') loadUsers();
+            if (page === 'datamaster') loadPenduduk();
+        }
+
+        $(document).ready(function() {
+            // Make dashboard menu active first
+            $('#menu-dashboard').addClass('active-menu');
+        });
+
+        function submitInviteForm(e) {
+            e.preventDefault();
+            sendInvite();
+        }
+
+        function sendInvite() {
+            const data = {
+                name: $('#inviteName').val().trim(),
+                email: $('#inviteEmail').val().trim(),
+                role: $('#inviteRole').val()
+            };
+
+            // Basic validation
+            if (!data.name || !data.email || !data.role) {
+                Swal.fire('Error!', 'Semua field harus diisi!', 'error');
+                return;
+            }
+
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(data.email)) {
+                Swal.fire('Error!', 'Format email tidak valid!', 'error');
+                return;
+            }
+
+            $('#sendInviteBtn').prop('disabled', true);
+            $('#sendInviteBtn').html('<i class="fas fa-spinner fa-spin"></i> Membuat...');
+
+            $.ajax({
+                url: '{{ url("/users/invite") }}',
+                method: 'POST',
+                data: data,
+                success: function(response) {
+                    $('#inviteForm')[0].reset();
+
+                    // Show success message and open Gmail
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: response.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        // Open Gmail with pre-filled content
+                        window.open(response.gmail_url, '_blank');
+                    });
+
+                    loadUsers();
+                },
+                error: function(xhr) {
+                    let errorMsg = 'Gagal membuat user';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    Swal.fire('Error!', errorMsg, 'error');
+                },
+                complete: function() {
+                    $('#sendInviteBtn').prop('disabled', false);
+                    $('#sendInviteBtn').html('<i class="fas fa-paper-plane"></i> Kirim Undangan');
+                }
+            });
+        }
+
+        // === USER MANAGEMENT ===
+        function loadUsers() {
+            $.ajax({
+                url: '{{ url("/users/list") }}',
+                method: 'GET',
+                success: function(response) {
+                    let html = '';
+                    response.users.forEach((user, index) => {
+                        const roleName = user.roles && user.roles.length > 0 ? user.roles[0].name : 'user';
+                        const roleClass = roleName === 'admin' ? 'badge-danger' : roleName === 'staff' ? 'badge-warning' : 'badge-info';
+                        const statusClass = user.is_approved ? 'badge-success' : 'badge-warning';
+                        const statusText = user.is_approved ? 'Disetujui' : 'Pending';
+                        const langText = user.language_preference === 'id' ? 'Indonesia' : 'English';
+                        html += '<tr>' +
+                            '<td class="text-center">' + (index + 1) + '</td>' +
+                            '<td><strong>' + user.name + '</strong></td>' +
+                            '<td>' + user.email + '</td>' +
+                            '<td><span class="badge badge-role ' + roleClass + '">' + roleName.toUpperCase() + '</span></td>' +
+                            '<td><span class="badge badge-status ' + statusClass + '">' + statusText + '</span></td>' +
+                            '<td>' + langText + '</td>' +
+                            '<td>' + new Date(user.created_at).toLocaleDateString('id-ID') + '</td>' +
+                            '<td class="text-center table-actions">' +
+                                '<button class="btn btn-sm btn-warning" onclick="editUser(' + user.id + ')" title="Edit">' +
+                                    '<i class="fas fa-edit"></i>' +
+                                '</button>' +
+                                '<button class="btn btn-sm btn-danger" onclick="deleteUser(' + user.id + ')" title="Hapus">' +
+                                    '<i class="fas fa-trash"></i>' +
+                                '</button>' +
+                            '</td>' +
+                        '</tr>';
+                    });
+                    $('#userTableBody').html(html);
+
+                    if (dataTable) dataTable.destroy();
+                    dataTable = $('#usersTable').DataTable({
+                        "language": { "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json" },
+                        "pageLength": 10
+                    });
+                },
+                error: function(xhr) {
+                    Swal.fire('Error!', 'Gagal memuat data pengguna', 'error');
+                }
+            });
+        }
+
+        function openUserModal(action, userId = null) {
+            $('#userForm')[0].reset();
+            $('#formAction').val(action);
+            if (action === 'add') {
+                $('#userModalTitle').text('Tambah Pengguna Baru');
+                $('#userId').val('');
+                $('#userPassword').prop('required', true);
+                $('#passwordRequired').addClass('form-label-required');
+                $('#passwordHint').text('Min. 6 karakter');
+                $('#submitUserBtn').html('<i class="fas fa-save"></i> Simpan');
+            } else {
+                $('#userModalTitle').text('Edit Pengguna');
+                $('#userPassword').prop('required', false);
+                $('#passwordRequired').removeClass('form-label-required');
+                $('#passwordHint').text('Kosongkan jika tidak ingin mengubah password');
+                $('#submitUserBtn').html('<i class="fas fa-save"></i> Update');
+            }
+            $('#userModal').modal('show');
+        }
+
+        function editUser(id) {
+            $.ajax({
+                url: '{{ url("/users") }}/' + id,
+                method: 'GET',
+                success: function(response) {
+                    openUserModal('edit', id);
+                    $('#userId').val(response.id);
+                    $('#userName').val(response.name);
+                    $('#userEmail').val(response.email);
+                    $('#userRole').val(response.roles && response.roles.length > 0 ? response.roles[0].name : 'user');
+                    $('#userLanguage').val(response.language_preference);
+                    $('#userApproved').val(response.is_approved ? '1' : '0');
+                    $('#userReason').val(response.registration_reason);
+                },
+                error: function(xhr) {
+                    Swal.fire('Error!', 'Gagal memuat data pengguna', 'error');
+                }
+            });
+        }
+
+        function submitUserForm(e) {
+            e.preventDefault();
+            const formData = new FormData($('#userForm')[0]);
+            const action = $('#formAction').val();
+            const userId = $('#userId').val();
+            let url = '{{ url("/users") }}';
+            let method = 'POST';
+            if (action === 'edit') {
+                url = '{{ url("/users") }}/' + userId;
+                formData.append('_method', 'PUT');
+            }
+
+            $('#submitUserBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+            $.ajax({
+                url: url,
+                method: method,
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#userModal').modal('hide');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: response.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    loadUsers();
+                },
+                error: function(xhr) {
+                    let errorMsg = 'Terjadi kesalahan';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    Swal.fire('Error!', errorMsg, 'error');
+                },
+                complete: function() {
+                    $('#submitUserBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
+                }
+            });
+        }
+
+        function deleteUser(id) {
+            Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: "Data pengguna akan dihapus permanen!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `{{ url("/users/users") }}/${id}`,
+                        method: 'DELETE',
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Terhapus!',
+                                text: response.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                            loadUsers();
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error!', 'Gagal menghapus pengguna', 'error');
+                        }
                     });
                 }
             });
-        });
+        }
 
-        // Add hover effect to menu items
-        const menuItems = document.querySelectorAll('.menu-item');
-        menuItems.forEach(item => {
-            item.addEventListener('mouseenter', function() {
-                if (!this.classList.contains('active')) {
-                    this.style.transform = 'translateX(5px)';
+        // === DATA MASTER PENDUDUK ===
+        function loadPenduduk(search = '') {
+            $.ajax({
+                url: '{{ url("/penduduk/penduduk") }}',
+                method: 'GET',
+                data: { search: search },
+                success: function(response) {
+                    let html = '';
+                    if (response.length === 0) {
+                        html = `<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data penduduk ditemukan</td></tr>`;
+                    } else {
+                        response.forEach((item, index) => {
+                            html += `
+                                <tr>
+                                    <td class="text-center">${index + 1}</td>
+                                    <td><strong>${item.nik}</strong></td>
+                                    <td>${item.nama}</td>
+                                    <td>${item.alamat.substring(0, 50)}${item.alamat.length > 50 ? '...' : ''}</td>
+                                    <td>${item.rt || '-'}/${item.rw || '-'}</td>
+                                    <td>${item.provinsi || '-'}</td>
+                                    <td class="text-center table-actions">
+                                        <button class="btn btn-sm btn-warning" onclick="editPenduduk(${item.id})" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="deletePenduduk(${item.id})" title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>`;
+                        });
+                    }
+                    $('#pendudukTableBody').html(html);
+
+                    if (pendudukTable) pendudukTable.destroy();
+                    pendudukTable = $('#pendudukTable').DataTable({
+                        "language": { "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json" },
+                        "pageLength": 10,
+                        "ordering": false,
+                        "searching": false
+                    });
+                },
+                error: function(xhr) {
+                    Swal.fire('Error!', 'Gagal memuat data penduduk', 'error');
                 }
             });
-            
-            item.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateX(0)';
+        }
+
+        function openPendudukModal(action, data = null) {
+            $('#pendudukForm')[0].reset();
+            $('#pendudukId').val('');
+            $('#pendudukModalTitle').text(action === 'add' ? 'Tambah Penduduk' : 'Edit Penduduk');
+            $('#submitPendudukBtn').html('<i class="fas fa-save"></i> Simpan');
+            $('#locationStatus').text('');
+
+            if (data) {
+                $('#pendudukId').val(data.id);
+                $('#pendudukNik').val(data.nik);
+                $('#pendudukNama').val(data.nama);
+                $('#pendudukAlamat').val(data.alamat);
+                $('#pendudukRt').val(data.rt);
+                $('#pendudukRw').val(data.rw);
+                $('#pendudukProvinsi').val(data.provinsi);
+                $('#pendudukLatitude').val(data.latitude || '');
+                $('#pendudukLongitude').val(data.longitude || '');
+            }
+
+            $('#pendudukModal').modal('show');
+        }
+
+        function editPenduduk(id) {
+            $.ajax({
+                url: `{{ url("/penduduk/penduduk") }}/${id}`,
+                method: 'GET',
+                success: function(response) {
+                    openPendudukModal('edit', response);
+                },
+                error: function(xhr) {
+                    Swal.fire('Error!', 'Gagal memuat data penduduk', 'error');
+                }
+            });
+        }
+
+        function submitPendudukForm(e) {
+            e.preventDefault();
+
+            const nik = $('#pendudukNik').val().trim();
+            if (!/^\d{16}$/.test(nik)) {
+                Swal.fire('Error!', 'NIK harus 16 digit angka!', 'error');
+                return;
+            }
+
+            const rt = $('#pendudukRt').val().trim();
+            const rw = $('#pendudukRw').val().trim();
+            if (!rt || !rw || !/^\d{1,3}$/.test(rt) || !/^\d{1,3}$/.test(rw)) {
+                Swal.fire('Error!', 'RT dan RW harus angka (max 3 digit)!', 'error');
+                return;
+            }
+
+            const latitude = $('#pendudukLatitude').val().trim();
+            const longitude = $('#pendudukLongitude').val().trim();
+            if (latitude && (isNaN(latitude) || latitude < -90 || latitude > 90)) {
+                Swal.fire('Error!', 'Latitude tidak valid! Harus antara -90 sampai 90', 'error');
+                return;
+            }
+            if (longitude && (isNaN(longitude) || longitude < -180 || longitude > 180)) {
+                Swal.fire('Error!', 'Longitude tidak valid! Harus antara -180 sampai 180', 'error');
+                return;
+            }
+
+            // Set dummy values for hidden fields
+            $('#pendudukForm').append('<input type="hidden" name="tanggal_lahir" value="1990-01-01">');
+            $('#pendudukForm').append('<input type="hidden" name="jenis_kelamin" value="Laki-laki">');
+            $('#pendudukForm').append('<input type="hidden" name="status_perkawinan" value="Belum Kawin">');
+            $('#pendudukForm').append('<input type="hidden" name="pekerjaan" value="Tidak diketahui">');
+
+            const id = $('#pendudukId').val();
+            if (id) {
+                $('#formMethod').val('PUT');
+            }
+
+            $('#submitPendudukBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+            // Submit form normally (not AJAX)
+            $('#pendudukForm').off('submit').submit();
+        }
+
+        // Handle form submission response
+        $(document).ready(function() {
+            // Check for success/error messages from server
+            @if(session('success'))
+                $('#pendudukModal').modal('hide');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: '{{ session("success") }}',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+                loadPenduduk($('#searchPenduduk').val());
+            @endif
+
+            @if(session('error'))
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: '{{ session("error") }}'
+                });
+            @endif
+        });
+
+        function submitPendudukForm(e) {
+            e.preventDefault();
+
+            const nik = $('#pendudukNik').val().trim();
+            if (!/^\d{16}$/.test(nik)) {
+                Swal.fire('Error!', 'NIK harus 16 digit angka!', 'error');
+                return;
+            }
+
+            const rt = $('#pendudukRt').val().trim();
+            const rw = $('#pendudukRw').val().trim();
+            if (!rt || !rw || !/^\d{1,3}$/.test(rt) || !/^\d{1,3}$/.test(rw)) {
+                Swal.fire('Error!', 'RT dan RW harus angka (max 3 digit)!', 'error');
+                return;
+            }
+
+            const latitude = $('#pendudukLatitude').val().trim();
+            const longitude = $('#pendudukLongitude').val().trim();
+            if (latitude && (isNaN(latitude) || latitude < -90 || latitude > 90)) {
+                Swal.fire('Error!', 'Latitude tidak valid! Harus antara -90 sampai 90', 'error');
+                return;
+            }
+            if (longitude && (isNaN(longitude) || longitude < -180 || longitude > 180)) {
+                Swal.fire('Error!', 'Longitude tidak valid! Harus antara -180 sampai 180', 'error');
+                return;
+            }
+
+            // Set dummy values for hidden fields
+            $('#pendudukForm').append('<input type="hidden" name="tanggal_lahir" value="1990-01-01">');
+            $('#pendudukForm').append('<input type="hidden" name="jenis_kelamin" value="Laki-laki">');
+            $('#pendudukForm').append('<input type="hidden" name="status_perkawinan" value="Belum Kawin">');
+            $('#pendudukForm').append('<input type="hidden" name="pekerjaan" value="Tidak diketahui">');
+
+            const id = $('#pendudukId').val();
+            if (id) {
+                $('#formMethod').val('PUT');
+            }
+
+            $('#submitPendudukBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+            // Submit form normally (not AJAX)
+            $('#pendudukForm').off('submit').submit();
+        }
+
+        function deletePenduduk(id) {
+            Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: "Data penduduk akan dihapus permanen!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `{{ url("/penduduk/penduduk") }}/${id}`,
+                        method: 'POST',
+                        data: { _method: 'DELETE' },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Terhapus!',
+                                text: 'Data penduduk berhasil dihapus',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                            loadPenduduk($('#searchPenduduk').val());
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error!', 'Gagal menghapus data penduduk', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        // Real-time Search untuk Penduduk
+        $('#searchPenduduk').on('input', function() {
+            loadPenduduk($(this).val());
+        });
+
+        // Validasi Input Penduduk
+        $(document).ready(function() {
+            $('#pendudukNik').on('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16);
+            });
+            $('#pendudukRt, #pendudukRw').on('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 3);
+            });
+            $('#pendudukLatitude, #pendudukLongitude').on('input', function() {
+                this.value = this.value.replace(/[^0-9.\-]/g, '');
+            });
+
+            // Geolocation
+            $('#getLocationBtn').on('click', function() {
+                const status = $('#locationStatus');
+                if (navigator.geolocation) {
+                    status.text('Mendapatkan lokasi...').removeClass('text-danger text-success').addClass('text-warning');
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            $('#pendudukLatitude').val(position.coords.latitude.toFixed(6));
+                            $('#pendudukLongitude').val(position.coords.longitude.toFixed(6));
+                            status.text('Lokasi berhasil didapat!').removeClass('text-warning').addClass('text-success');
+                        },
+                        function(error) {
+                            status.text('Gagal mendapatkan lokasi').removeClass('text-warning').addClass('text-danger');
+                            console.error('Geolocation error:', error);
+                        }
+                    );
+                } else {
+                    status.text('Browser tidak mendukung geolokasi').addClass('text-danger');
+                }
+            });
+
+            // Form event listeners
+            $('#inviteForm').on('submit', submitInviteForm);
+            $('#pendudukForm').on('submit', submitPendudukForm);
+
+        // Load initial data
+            if ($('#page-users').hasClass('active')) loadUsers();
+            if ($('#page-datamaster').hasClass('active')) loadPenduduk();
+
+
+        });
+
+        // === SETTINGS PAGE FUNCTIONALITY ===
+        // Profile Update
+        $('#profileForm').on('submit', function(e) {
+            e.preventDefault();
+            const btn = $('#saveProfileBtn');
+            const originalText = btn.html();
+
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+            $.ajax({
+                url: '{{ url("/profile") }}',
+                method: 'PATCH',
+                data: $(this).serialize(),
+                success: function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Profil berhasil diperbarui.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    // Update sidebar name if changed
+                    if ($('#name').val() !== '{{ auth()->user()->name }}') {
+                        $('.sidebar .text-gray-600').text($('#name').val());
+                    }
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.message || 'Terjadi kesalahan saat menyimpan profil.';
+                    Swal.fire('Error!', error, 'error');
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html(originalText);
+                }
             });
         });
+
+        // Password Change
+        $('#passwordForm').on('submit', function(e) {
+            e.preventDefault();
+
+            if ($('#password').val() !== $('#password_confirmation').val()) {
+                Swal.fire('Error!', 'Konfirmasi password tidak cocok.', 'error');
+                return;
+            }
+
+            const btn = $('#changePasswordBtn');
+            const originalText = btn.html();
+
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengubah...');
+
+            $.ajax({
+                url: '{{ url("/pengaturan/password") }}',
+                method: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Password berhasil diubah.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    $('#passwordForm')[0].reset();
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.message || 'Terjadi kesalahan saat mengubah password.';
+                    Swal.fire('Error!', error, 'error');
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+
+        // Language Change
+        $('#changeLanguageBtn').on('click', function() {
+            const lang = $('#language').val();
+            const btn = $(this);
+            const originalText = btn.html();
+
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengubah...');
+
+            $.ajax({
+                url: '{{ url("/pengaturan/lang") }}',
+                method: 'POST',
+                data: { lang: lang, _token: '{{ csrf_token() }}' },
+                success: function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Bahasa berhasil diubah. Halaman akan dimuat ulang.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.message || 'Terjadi kesalahan saat mengubah bahasa.';
+                    Swal.fire('Error!', error, 'error');
+                    btn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+
+        // Chart dummy data
+        var ctx = document.getElementById('myAreaChart').getContext('2d');
+        var myAreaChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
+                datasets: [{
+                    label: 'Bidang Tersertipikat (Juta)',
+                    data: [45, 58, 68, 75, 80, 82.3],
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: false } }
+            }
+        });
     </script>
+
 </body>
 </html>

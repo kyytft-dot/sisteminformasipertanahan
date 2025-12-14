@@ -1,370 +1,354 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Form Pengaturan Sistem Informasi Pertanahan</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> <!-- Untuk ikon -->
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
-            color: #333;
-            line-height: 1.6;
-        }
-        header {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        header h1 {
-            margin: 0;
-            font-size: 2.5em;
-            font-weight: 300;
-        }
-        header p {
-            margin: 10px 0 0;
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-        .container {
-            max-width: 800px;
-            margin: 30px auto;
-            padding: 30px;
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-            animation: fadeIn 0.5s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .form-section {
-            margin-bottom: 30px;
-        }
-        .form-section h2 {
-            color: #28a745;
-            border-bottom: 2px solid #28a745;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            font-size: 1.5em;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
-        }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s, box-shadow 0.3s;
-            box-sizing: border-box;
-        }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            border-color: #28a745;
-            box-shadow: 0 0 8px rgba(40, 167, 69, 0.3);
-            outline: none;
-        }
-        .form-group textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-        .checkbox-group, .radio-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .checkbox-group label, .radio-group label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            font-weight: normal;
-        }
-        .checkbox-group input, .radio-group input {
-            margin-right: 8px;
-        }
-        .file-upload {
-            position: relative;
-            display: inline-block;
-            width: 100%;
-        }
-        .file-upload input[type="file"] {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-        .file-upload label {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px 15px;
-            border: 2px dashed #28a745;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .file-upload label:hover {
-            background-color: #e8f5e8;
-        }
-        .file-upload label i {
-            margin-right: 10px;
-        }
-        .buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: flex-end;
-            margin-top: 30px;
-        }
-        .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-save {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-        }
-        .btn-save:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-        }
-        .btn-reset {
-            background-color: #6c757d;
-            color: white;
-        }
-        .btn-reset:hover {
-            background-color: #5a6268;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
-        }
-        .btn-cancel {
-            background-color: #dc3545;
-            color: white;
-        }
-        .btn-cancel:hover {
-            background-color: #c82333;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
-        }
-        .success-message, .error-message {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        .success-message {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .error-message {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                margin: 20px;
-            }
-            .buttons {
-                flex-direction: column;
-            }
-            .checkbox-group, .radio-group {
-                flex-direction: column;
-            }
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1><i class="fas fa-cogs"></i> Form Pengaturan</h1>
-        <p>Atur Preferensi dan Profil Anda untuk Sistem Informasi Pertanahan</p>
-    </header>
+@extends('layouts.app')
 
-    <div class="container">
-        <div id="successMessage" class="success-message">
-            <i class="fas fa-check-circle"></i> Pengaturan berhasil disimpan!
-        </div>
-        <div id="errorMessage" class="error-message">
-            <i class="fas fa-exclamation-triangle"></i> Terjadi kesalahan. Silakan coba lagi.
-        </div>
-        <form id="settingsForm">
-            <div class="form-section">
-                <h2><i class="fas fa-user"></i> Profil Pengguna</h2>
-                <div class="form-group">
-                    <label for="fullName"><i class="fas fa-signature"></i> Nama Lengkap</label>
-                    <input type="text" id="fullName" name="fullName" placeholder="Masukkan nama lengkap Anda" required>
-                </div>
-                <div class="form-group">
-                    <label for="email"><i class="fas fa-envelope"></i> Email</label>
-                    <input type="email" id="email" name="email" placeholder="Masukkan email Anda" required>
-                </div>
-                <div class="form-group">
-                    <label for="phone"><i class="fas fa-phone"></i> Nomor Telepon</label>
-                    <input type="tel" id="phone" name="phone" placeholder="Masukkan nomor telepon" required>
-                </div>
-                <div class="form-group">
-                    <label for="bio"><i class="fas fa-info-circle"></i> Bio</label>
-                    <textarea id="bio" name="bio" placeholder="Ceritakan sedikit tentang diri Anda"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="profilePic"><i class="fas fa-camera"></i> Foto Profil</label>
-                    <div class="file-upload">
-                        <input type="file" id="profilePic" name="profilePic" accept="image/*">
-                        <label for="profilePic"><i class="fas fa-upload"></i> Pilih File Gambar</label>
-                    </div>
-                </div>
-            </div>
-            <div class="form-section">
-                <h2><i class="fas fa-shield-alt"></i> Keamanan</h2>
-                <div class="form-group">
-                    <label for="currentPassword"><i class="fas fa-lock"></i> Kata Sandi Saat Ini</label>
-                    <input type="password" id="currentPassword" name="currentPassword" placeholder="Masukkan kata sandi saat ini" required>
-                </div>
-                <div class="form-group">
-                    <label for="newPassword"><i class="fas fa-key"></i> Kata Sandi Baru</label>
-                    <input type="password" id="newPassword" name="newPassword" placeholder="Masukkan kata sandi baru">
-                </div>
-                <div class="form-group">
-                    <label for="confirmPassword"><i class="fas fa-key"></i> Konfirmasi Kata Sandi Baru</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Konfirmasi kata sandi baru">
-                </div>
-            </div>
-            <div class="form-section">
-                <h2><i class="fas fa-palette"></i> Preferensi Tampilan</h2>
-                <div class="form-group">
-                    <label for="theme"><i class="fas fa-paint-brush"></i> Tema</label>
-                    <select id="theme" name="theme">
-                        <option value="green">Hijau (Default)</option>
-                        <option value="blue">Biru</option>
-                        <option value="dark">Gelap</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label><i class="fas fa-language"></i> Bahasa</label>
-                    <div class="radio-group">
-                        <label><input type="radio" name="language" value="id" checked> Indonesia</label>
-                        <label><input type="radio" name="language" value="en"> English</label>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label><i class="fas fa-bell"></i> Notifikasi</label>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="notifications" value="email" checked> Email</label>
-                        <label><input type="checkbox" name="notifications" value="sms"> SMS</label>
-                        <label><input type="checkbox" name="notifications" value="push"> Push Notification</label>
-                    </div>
-                </div>
-            </div>
-            <div class="form-section">
-                <h2><i class="fas fa-cogs"></i> Pengaturan Lainnya</h2>
-                <div class="form-group">
-                    <label for="timezone"><i class="fas fa-clock"></i> Zona Waktu</label>
-                    <select id="timezone" name="timezone">
-                        <option value="WIB">WIB (Waktu Indonesia Barat)</option>
-                        <option value="WITA">WITA (Waktu Indonesia Tengah)</option>
-                        <option value="WIT">WIT (Waktu Indonesia Timur)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label><i class="fas fa-toggle-on"></i> Fitur Tambahan</label>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="features" value="autoSave" checked> Simpan Otomatis</label>
-                        <label><input type="checkbox" name="features" value="darkMode"> Mode Gelap</label>
-                        <label><input type="checkbox" name="features" value="analytics"> Analitik Penggunaan</label>
-                    </div>
-                </div>
-            </div>
-            <div class="buttons">
-                <button type="button" class="btn btn-cancel" onclick="cancelForm()"><i class="fas fa-times"></i> Batal</button>
-                <button type="button" class="btn btn-reset" onclick="resetForm()"><i class="fas fa-undo"></i> Reset</button>
-                <button type="submit" class="btn btn-save"><i class="fas fa-save"></i> Simpan Pengaturan</button>
-            </div>
-        </form>
+@section('title', 'Pengaturan - SIPertanahan')
+
+@section('content')
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-cogs text-secondary"></i> Pengaturan Akun
+        </h1>
+        <span class="text-muted">Kelola profil dan preferensi Anda</span>
     </div>
 
-    <script>
-        document.getElementById('settingsForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
+    <div class="row">
+        <!-- Profile Settings -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-circle"></i> Profil Pengguna
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="profileForm">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-3 text-center">
+                                <img id="profilePhotoPreview" class="img-fluid rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #dee2e6;" src="{{ auth()->user()->profile_photo_url }}" alt="Foto Profil">
+                                <div class="form-group">
+                                    <label for="profile_photo">Ubah Foto Profil</label>
+                                    <input type="file" class="form-control-file" id="profile_photo" name="profile_photo" accept="image/*">
+                                    <small class="form-text text-muted">Format: JPG, PNG, GIF. Max: 2MB</small>
+                                </div>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="name" class="form-label-required">Nama Lengkap</label>
+                                            <input type="text" class="form-control" id="name" name="name"
+                                                   value="{{ auth()->user()->name }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="email" class="form-label-required">Email</label>
+                                            <input type="email" class="form-control" id="email" name="email"
+                                                   value="{{ auth()->user()->email }}" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="current_password_profile">Password Saat Ini (untuk konfirmasi)</label>
+                                    <input type="password" class="form-control" id="current_password_profile"
+                                           name="current_password" placeholder="Masukkan password saat ini">
+                                    <small class="form-text text-muted">Diperlukan untuk mengubah data profil</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary" id="saveProfileBtn">
+                                    <i class="fas fa-save"></i> Simpan Perubahan
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-            if (newPassword && newPassword !== confirmPassword) {
-                showError('Kata sandi baru dan konfirmasi tidak cocok.');
-                return;
+            <!-- Password Change -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-key"></i> Ubah Password
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="passwordForm">
+                        @csrf
+                        <div class="form-group">
+                            <label for="current_password" class="form-label-required">Password Saat Ini</label>
+                            <input type="password" class="form-control" id="current_password"
+                                   name="current_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password" class="form-label-required">Password Baru</label>
+                            <input type="password" class="form-control" id="password"
+                                   name="password" minlength="6" required>
+                            <small class="form-text text-muted">Minimal 6 karakter</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="password_confirmation" class="form-label-required">Konfirmasi Password Baru</label>
+                            <input type="password" class="form-control" id="password_confirmation"
+                                   name="password_confirmation" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning" id="changePasswordBtn">
+                            <i class="fas fa-key"></i> Ubah Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Language & Preferences -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-language"></i> Preferensi Bahasa
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="language">Bahasa Interface</label>
+                        <select class="form-control" id="language">
+                            <option value="id" {{ session('app_lang', 'id') == 'id' ? 'selected' : '' }}>
+                                🇮🇩 Bahasa Indonesia
+                            </option>
+                            <option value="en" {{ session('app_lang', 'id') == 'en' ? 'selected' : '' }}>
+                                🇬🇧 English
+                            </option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-info btn-block" id="changeLanguageBtn">
+                        <i class="fas fa-language"></i> Ubah Bahasa
+                    </button>
+                    <small class="form-text text-muted mt-2">
+                        Perubahan bahasa akan diterapkan setelah halaman dimuat ulang
+                    </small>
+                </div>
+            </div>
+
+            <!-- Account Info -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-info-circle"></i> Informasi Akun
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Role:</strong>
+                        <span class="badge badge-primary ml-2">
+                            {{ auth()->user()->getRoleNames()->first() ?? 'user' }}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <span class="badge badge-success ml-2">
+                            {{ auth()->user()->is_approved ? 'Disetujui' : 'Pending' }}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Bergabung:</strong>
+                        <span class="text-muted">
+                            {{ auth()->user()->created_at->format('d M Y') }}
+                        </span>
+                    </div>
+                    <div class="mb-0">
+                        <strong>Terakhir Login:</strong>
+                        <span class="text-muted">
+                            {{ auth()->user()->updated_at->format('d M Y H:i') }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageTitle">Pesan</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="messageBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    // Profile Update
+    $('#profileForm').on('submit', function(e) {
+        e.preventDefault();
+        const btn = $('#saveProfileBtn');
+        const originalText = btn.html();
+
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+        $.ajax({
+            url: '{{ url("/profile") }}',
+            method: 'PATCH',
+            data: $(this).serialize(),
+            success: function(response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Profil berhasil diperbarui.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                // Update sidebar name if changed
+                if ($('#name').val() !== '{{ auth()->user()->name }}') {
+                    $('.sidebar .text-gray-600').text($('#name').val());
+                }
+            },
+            error: function(xhr) {
+                const error = xhr.responseJSON?.message || 'Terjadi kesalahan saat menyimpan profil.';
+                Swal.fire('Error!', error, 'error');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalText);
             }
-
-            // Simulasi penyimpanan (di backend, kirim data ke server)
-            showSuccess('Pengaturan berhasil disimpan!');
-            // Reset form setelah sukses
-            setTimeout(() => {
-                document.getElementById('successMessage').style.display = 'none';
-            }, 3000);
         });
+    });
 
-        function resetForm() {
-            document.getElementById('settingsForm').reset();
-            hideMessages();
+    // Password Change
+    $('#passwordForm').on('submit', function(e) {
+        e.preventDefault();
+
+        if ($('#password').val() !== $('#password_confirmation').val()) {
+            showMessage('Error!', 'Konfirmasi password tidak cocok.', 'error');
+            return;
         }
 
-        function cancelForm() {
-            if (confirm('Apakah Anda yakin ingin membatalkan? Perubahan tidak akan disimpan.')) {
-                resetForm();
-            }
-        }
+        const btn = $('#changePasswordBtn');
+        const originalText = btn.html();
 
-        function showSuccess(message) {
-            const successMsg = document.getElementById('successMessage');
-            successMsg.textContent = message;
-            successMsg.style.display = 'block';
-            document.getElementById('errorMessage').style.display = 'none';
-        }
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengubah...');
 
-        function showError(message) {
-            const errorMsg = document.getElementById('errorMessage');
-            errorMsg.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + message;
-            errorMsg.style.display = 'block';
-            document.getElementById('successMessage').style.display = 'none';
-        }
-
-        function hideMessages() {
-            document.getElementById('successMessage').style.display = 'none';
-            document.getElementById('errorMessage').style.display = 'none';
-        }
-
-        // Validasi real-time untuk password
-        document.getElementById('confirmPassword').addEventListener('input', function() {
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = this.value;
-            if (newPassword && confirmPassword && newPassword !== confirmPassword) {
-                this.style.borderColor = '#dc3545';
-            } else {
-                this.style.borderColor = '#ddd';
+        $.ajax({
+            url: '{{ url("/pengaturan/password") }}',
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                showMessage('Berhasil!', 'Password berhasil diubah.', 'success');
+                $('#passwordForm')[0].reset();
+            },
+            error: function(xhr) {
+                const error = xhr.responseJSON?.message || 'Terjadi kesalahan saat mengubah password.';
+                showMessage('Error!', error, 'error');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalText);
             }
         });
-    </script>
-</body>
-</html>
+    });
+
+    // Language Change
+    $('#changeLanguageBtn').on('click', function() {
+        const lang = $('#language').val();
+        const btn = $(this);
+        const originalText = btn.html();
+
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengubah...');
+
+        $.ajax({
+            url: '{{ url("/pengaturan/lang") }}',
+            method: 'POST',
+            data: { lang: lang, _token: '{{ csrf_token() }}' },
+            success: function(response) {
+                showMessage('Berhasil!', 'Bahasa berhasil diubah. Halaman akan dimuat ulang.', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                const error = xhr.responseJSON?.message || 'Terjadi kesalahan saat mengubah bahasa.';
+                showMessage('Error!', error, 'error');
+                btn.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+
+    function showMessage(title, message, type = 'info') {
+        $('#messageTitle').text(title);
+        $('#messageBody').html(message);
+        $('#messageModal').modal('show');
+    }
+
+    // Photo Upload Handler
+    $('#profile_photo').on('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file size (2MB max)
+        if (file.size > 2048 * 1024) {
+            Swal.fire('Error!', 'Ukuran file maksimal 2MB.', 'error');
+            return;
+        }
+
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+            Swal.fire('Error!', 'Format file harus JPG, PNG, atau GIF.', 'error');
+            return;
+        }
+
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            $('#profilePhotoPreview').attr('src', ev.target.result);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload to server
+        const formData = new FormData();
+        formData.append('profile_photo', file);
+        formData.append('_token', '{{ csrf_token() }}');
+
+        $.ajax({
+            url: '{{ route("profile.photo") }}',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    const url = response.profile_photo_url;
+                    $('#profilePhotoPreview').attr('src', url);
+
+                    // Store updated photo URL in localStorage for other pages
+                    localStorage.setItem('userProfilePhotoUrl', url);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Foto profil berhasil diperbarui.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            },
+            error: function(xhr) {
+                const error = xhr.responseJSON?.message || 'Gagal mengupload foto.';
+                Swal.fire('Error!', error, 'error');
+                // Revert preview on error
+                $('#profilePhotoPreview').attr('src', '{{ auth()->user()->profile_photo_url }}');
+            }
+        });
+    });
+});
+</script>
+@endpush
+@endsection

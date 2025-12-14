@@ -5,17 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Peta Pertanahan - Sistem Informasi Pertanahan</title>
-    
+   
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
-    
+   
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+   
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+   
     <style>
         * {
             margin: 0;
@@ -23,19 +23,15 @@
             box-sizing: border-box;
             font-family: 'Inter', sans-serif;
         }
-
         body {
             overflow: hidden;
             background: #f1f5f9;
         }
-
         #map {
             width: 100%;
             height: 100vh;
             z-index: 1;
         }
-
-        /* Control Panel */
         .control-panel {
             position: absolute;
             top: 20px;
@@ -44,79 +40,137 @@
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             z-index: 1000;
-            width: 320px;
+            width: 380px;
             max-height: 90vh;
             overflow-y: auto;
+            padding-bottom: 20px;
         }
-
         .panel-header {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
             padding: 20px;
             border-radius: 12px 12px 0 0;
         }
-
         .panel-header h2 {
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 5px;
         }
-
         .panel-header p {
             font-size: 13px;
             opacity: 0.9;
         }
-
-        .panel-content {
-            padding: 20px;
-        }
-
-        .tab-buttons {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+        /* Map search box in header */
+        .map-search {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
             gap: 8px;
-            margin-bottom: 20px;
         }
-
-        .tab-btn {
-            padding: 10px;
-            border: 2px solid #e2e8f0;
+        .search-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .map-search input {
+            flex: 1;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.15);
             background: white;
+            color: black;
+            font-size: 13px;
+        }
+        .map-search input::placeholder {
+            color: black;
+        }
+        .map-search button {
+            background: rgba(0,0,0,0.12);
+            border: none;
+            color: white;
+            padding: 8px 10px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            color: #64748b;
-            transition: all 0.3s;
+        }
+        .nearby-places {
             display: flex;
-            align-items: center;
-            justify-content: center;
             gap: 6px;
+            flex-wrap: wrap;
         }
-
-        .tab-btn:hover {
-            border-color: #10b981;
-            color: #10b981;
+        .nearby-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s;
         }
-
-        .tab-btn.active {
+        .nearby-btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.3);
+        }
+        .nearby-btn.active {
             background: #10b981;
             border-color: #10b981;
             color: white;
         }
-
-        .tab-content {
-            display: none;
+        #map-search-results .result-item.selected {
+            background: #e0e0e0 !important;
+        }
+        #map-search-results .result-item {
+            cursor: pointer;
+            padding: 8px 10px;
+            border-bottom: 1px solid #eef2f7;
+        }
+        #map-search-results .result-item:hover,
+        #map-search-results .result-item.selected {
+            background: #f8fafc !important;
+        }
+        /* search results dropdown */
+        #map-search-results {
+            position: relative;
+        }
+        #map-search-results .results {
+            position: absolute;
+            left: 0;
+            top: 8px;
+            z-index: 1400;
+            background: white;
+            color: #0f172a;
+            max-height: 260px;
+            overflow-y: auto;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            border-radius: 8px;
+            width: 100%;
+        }
+        #map-search-results .result-item {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eef2f7;
+            cursor: pointer;
+        }
+        #map-search-results .result-item:hover { background:#f8fafc }
+        .panel-content {
+            padding: 20px;
         }
 
-        .tab-content.active {
+        /* Form Section - Hidden by default */
+        .form-section {
+            display: none;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .form-section.active {
             display: block;
         }
 
         .form-group {
             margin-bottom: 15px;
         }
-
         .form-group label {
             display: block;
             font-size: 13px;
@@ -124,7 +178,6 @@
             color: #334155;
             margin-bottom: 6px;
         }
-
         .form-group input,
         .form-group textarea,
         .form-group select {
@@ -135,17 +188,15 @@
             font-size: 14px;
             transition: border-color 0.3s;
         }
-
         .form-group input:focus,
         .form-group textarea:focus,
         .form-group select:focus {
             outline: none;
             border-color: #10b981;
         }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
+        .form-group input[readonly] {
+            background-color: #f1f5f9;
+            cursor: not-allowed;
         }
 
         .btn {
@@ -162,148 +213,37 @@
             justify-content: center;
             gap: 8px;
         }
-
         .btn-primary {
             background: #10b981;
             color: white;
         }
-
         .btn-primary:hover {
             background: #059669;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
-
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-
         .btn-secondary {
             background: #64748b;
             color: white;
             margin-top: 10px;
         }
-
         .btn-secondary:hover {
             background: #475569;
         }
-
-        .data-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .data-item {
-            padding: 12px;
-            background: #f8fafc;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border: 2px solid #e2e8f0;
-            transition: all 0.3s;
-        }
-
-        .data-item:hover {
-            border-color: #10b981;
-            transform: translateX(5px);
-        }
-
-        .data-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .data-item-title {
-            font-weight: 600;
-            color: #1e293b;
-            font-size: 14px;
-        }
-
-        .data-item-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-icon {
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .btn-icon.edit {
+        .btn-new {
             background: #3b82f6;
             color: white;
+            margin: 15px 0;
+            font-size: 14px;
         }
-
-        .btn-icon.edit:hover {
+        .btn-new:hover {
             background: #2563eb;
-        }
-
-        .btn-icon.delete {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-icon.delete:hover {
-            background: #dc2626;
-        }
-
-        .btn-icon.view {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-icon.view:hover {
-            background: #059669;
-        }
-
-        .data-item-info {
-            font-size: 12px;
-            color: #64748b;
-            line-height: 1.6;
-        }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #34d399;
-        }
-
-        .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #f87171;
         }
 
         .draw-controls {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
-
         .draw-btn {
             padding: 12px;
             border: 2px solid #e2e8f0;
@@ -319,21 +259,145 @@
             align-items: center;
             gap: 6px;
         }
-
         .draw-btn:hover {
             border-color: #10b981;
             color: #10b981;
-            transform: translateY(-2px);
         }
-
         .draw-btn.active {
             background: #10b981;
-            border-color: #10b981;
             color: white;
+            border-color: #10b981;
         }
-
         .draw-btn i {
             font-size: 20px;
+        }
+
+        .file-upload-section {
+            margin: 15px 0;
+            padding: 12px;
+            background: #f0fdf4;
+            border-radius: 8px;
+            border: 2px dashed #86efac;
+        }
+        .file-upload-section label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #166534;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .file-input {
+            font-size: 13px;
+        }
+
+        /* Daftar Section */
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 20px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-box {
+            position: relative;
+            margin-bottom: 12px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 40px 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+        .data-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        .data-item {
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .data-item:hover {
+            border-color: #10b981;
+            transform: translateX(4px);
+        }
+        .data-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .data-item-title {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+        }
+        .data-item-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-icon {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+        .btn-icon.edit {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-icon.delete {
+            background: #ef4444;
+            color: white;
+        }
+        .data-item-info {
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+        .data-count {
+            font-size: 12px;
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .load-more-section {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .btn-load-more {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #334155;
+            cursor: pointer;
+        }
+        .btn-load-more:hover {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
         }
 
         .back-btn {
@@ -348,68 +412,14 @@
             cursor: pointer;
             font-weight: 600;
             color: #334155;
-            transition: all 0.3s;
             z-index: 1000;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
         .back-btn:hover {
             background: #10b981;
             color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
-        }
-
-        /* Loading Overlay */
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .loading-overlay.active {
-            display: flex;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #10b981;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
         }
 
         .info-box {
@@ -421,103 +431,95 @@
             font-size: 12px;
             color: #166534;
         }
+            /* Legend on map (bottom-right) */
+            .map-legend {
+                position: absolute;
+                right: 12px;
+                bottom: 12px;
+                background: white;
+                padding: 10px 12px;
+                border-radius: 8px;
+                box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+                z-index: 1200;
+                font-size: 13px;
+                display: block; /* visible by default */
+                min-width: 170px;
+                max-height: 260px; /* limit height and allow scrolling */
+                overflow-y: auto;
+                padding-right: 8px; /* space for scrollbar */
+            }
+            .legend-toggle {
+                position: absolute;
+                right: 12px;
+                bottom: 12px;
+                transform: translateY(-54px);
+                z-index: 1300;
+                background: #111827;
+                color: #fff;
+                border: none;
+                padding: 8px 10px;
+                border-radius: 8px;
+                cursor: pointer;
+                box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+                font-size: 13px;
+            }
+            .legend-toggle i { margin-right:6px }
+            .map-legend h4 { margin: 0 0 8px 0; font-size:14px }
+            .legend-row { display:flex; align-items:center; gap:8px; margin:6px 0 }
+            .legend-swatch { width:16px; height:16px; border-radius:3px; border:1px solid rgba(0,0,0,0.06) }
+            /* legend marker visuals */
+            .legend-marker { width:18px; height:28px; display:inline-block; vertical-align:middle; margin-right:8px }
+            .legend-marker-leaflet { background-image: url('https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png'); background-size: contain; background-repeat: no-repeat; }
+            .legend-marker-hospital { width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:11px; }
+            .legend-poi { width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:11px; margin-right:8px }
+            .legend-group { margin-top:8px }
+            .legend-group-header { font-weight:700; font-size:13px; color:#0f172a; margin:8px 0 6px }
+
+            /* center zoom control vertically on right */
+            .leaflet-top.leaflet-right { top: 50% !important; transform: translateY(-50%); }
     </style>
 </head>
 <body>
-    <!-- Map Container -->
+    <!-- Map -->
     <div id="map"></div>
 
     <!-- Back Button -->
     <button class="back-btn" onclick="window.location.href='/'">
-        <i class="fas fa-arrow-left"></i>
-        Kembali ke Dashboard
+        <i class="fas fa-arrow-left"></i> Kembali
     </button>
 
     <!-- Control Panel -->
     <div class="control-panel">
         <div class="panel-header">
             <h2><i class="fas fa-map-marked-alt"></i> Peta Pertanahan</h2>
-            <p>Kelola data spasial pertanahan</p>
+            <p>Kelola data tanah & fasilitas</p>
+            <div class="map-search">
+                <div class="search-row">
+                    <input id="map-search-input" type="text" placeholder="Cari lokasi (mis. 'SMK TI Garuda Nusantara')...">
+                    <div id="map-search-results"></div>
+                    <button id="map-search-btn" title="Cari"><i class="fas fa-location-arrow"></i></button>
+                    <button id="map-refresh-btn" title="Refresh Pencarian"><i class="fas fa-refresh"></i></button>
+                </div>
+                <div class="nearby-places" id="nearby-places" style="display:none;">
+                    <button class="nearby-btn" data-type="restaurant"><i class="fas fa-utensils"></i> Restoran</button>
+                    <button class="nearby-btn" data-type="hospital"><i class="fas fa-hospital"></i> Rumah Sakit</button>
+                    <button class="nearby-btn" data-type="school"><i class="fas fa-school"></i> Sekolah</button>
+                    <button class="nearby-btn" data-type="bank"><i class="fas fa-building-columns"></i> Bank</button>
+                    <button class="nearby-btn" data-type="fuel"><i class="fas fa-gas-pump"></i> SPBU</button>
+                </div>
+            </div>
         </div>
-
         <div class="panel-content">
-            <!-- Tab Buttons -->
-            <div class="tab-buttons">
-                <button class="tab-btn active" data-tab="penduduk">
-                    <i class="fas fa-users"></i> Penduduk
-                </button>
-                <button class="tab-btn" data-tab="polygon">
-                    <i class="fas fa-draw-polygon"></i> Polygon
-                </button>
-                <button class="tab-btn" data-tab="polyline">
-                    <i class="fas fa-route"></i> Jarak
-                </button>
-                <button class="tab-btn" data-tab="marker">
-                    <i class="fas fa-map-marker-alt"></i> Marker
-                </button>
-            </div>
 
-            <!-- Penduduk Tab -->
-            <div class="tab-content active" id="penduduk-tab">
+            <!-- ========== FORM GAMBAR AREA (HIDDEN DEFAULT) ========== -->
+            <div class="form-section" id="form-area">
                 <div class="info-box">
-                    <i class="fas fa-info-circle"></i> Klik pada peta untuk menambah lokasi penduduk
+                    <i class="fas fa-info-circle"></i> Klik "Gambar Area" lalu buat bentuk di peta
                 </div>
-
-                <form id="form-penduduk">
-                    <input type="hidden" id="penduduk_id">
-                    <input type="hidden" id="penduduk_lat">
-                    <input type="hidden" id="penduduk_lng">
-
-                    <div class="form-group">
-                        <label>NIK</label>
-                        <input type="text" id="nik" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Nama Lengkap</label>
-                        <input type="text" id="nama" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Alamat</label>
-                        <textarea id="alamat" required></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label>No. Telepon</label>
-                        <input type="text" id="telepon">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Simpan Penduduk
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetForm('penduduk')">
-                        <i class="fas fa-times"></i> Batal
-                    </button>
-                </form>
-
-                <hr style="margin: 20px 0; border: none; border-top: 2px solid #e2e8f0;">
-
-                <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 15px; color: #1e293b;">
-                    <i class="fas fa-list"></i> Daftar Penduduk
-                </h3>
-                <div class="data-list" id="list-penduduk"></div>
-            </div>
-
-            <!-- Polygon Tab -->
-            <div class="tab-content" id="polygon-tab">
-                <div class="info-box">
-                    <i class="fas fa-info-circle"></i> Klik "Gambar Polygon" lalu klik pada peta untuk membuat bentuk
-                </div>
-
                 <div class="draw-controls">
-                    <button class="draw-btn" onclick="startDrawing('polygon')">
+                    <button class="draw-btn" onclick="startDrawing()">
                         <i class="fas fa-draw-polygon"></i>
-                        <span>Gambar Polygon</span>
-                    </button>
-                    <button class="draw-btn" onclick="stopDrawing()">
-                        <i class="fas fa-stop"></i>
-                        <span>Batal</span>
+                        <span>Gambar Area</span>
                     </button>
                 </div>
 
@@ -526,1069 +528,1282 @@
                     <input type="hidden" id="polygon_coordinates">
 
                     <div class="form-group">
-                        <label>Nama Lokasi</label>
-                        <input type="text" id="polygon_nama" required>
+                        <label>Cari Penduduk</label>
+                        <input type="text" id="polygon_penduduk" list="penduduk-list" placeholder="NIK / Nama..." required onchange="fillPendudukData()">
+                        <datalist id="penduduk-list"></datalist>
+                        <input type="hidden" id="polygon_penduduk_id">
                     </div>
-
+                    <div class="form-group">
+                        <label>NIK</label>
+                        <input type="text" id="polygon_nik" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Pemilik</label>
+                        <input type="text" id="polygon_nama" readonly>
+                    </div>
                     <div class="form-group">
                         <label>Luas (m²)</label>
-                        <input type="number" step="0.01" id="luas" required>
+                        <input type="number" step="0.01" id="luas" readonly>
                     </div>
-
                     <div class="form-group">
-                        <label>Keterangan</label>
-                        <textarea id="polygon_keterangan"></textarea>
+                        <label>Luas Detail (m²) <small style="font-weight:600; font-size:12px; color:#64748b;">(Opsional)</small></label>
+                        <input type="text" id="luas_detail" placeholder="Masukkan luas detail (opsional)">
                     </div>
-
                     <div class="form-group">
-                        <label>Warna</label>
-                        <input type="color" id="polygon_warna" value="#10b981">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Simpan Polygon
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetForm('polygon')">
-                        <i class="fas fa-times"></i> Batal
-                    </button>
-                </form>
-
-                <hr style="margin: 20px 0; border: none; border-top: 2px solid #e2e8f0;">
-
-                <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 15px; color: #1e293b;">
-                    <i class="fas fa-list"></i> Daftar Polygon
-                </h3>
-                <div class="data-list" id="list-polygon"></div>
-            </div>
-
-            <!-- Polyline Tab -->
-            <div class="tab-content" id="polyline-tab">
-                <div class="info-box">
-                    <i class="fas fa-info-circle"></i> Klik "Gambar Garis" lalu klik pada peta untuk membuat rute
-                </div>
-
-                <div class="draw-controls">
-                    <button class="draw-btn" onclick="startDrawing('polyline')">
-                        <i class="fas fa-route"></i>
-                        <span>Gambar Garis</span>
-                    </button>
-                    <button class="draw-btn" onclick="stopDrawing()">
-                        <i class="fas fa-stop"></i>
-                        <span>Batal</span>
-                    </button>
-                </div>
-
-                <form id="form-polyline">
-                    <input type="hidden" id="polyline_id">
-                    <input type="hidden" id="polyline_coordinates">
-
-                    <div class="form-group">
-                        <label>Nama Rute</label>
-                        <input type="text" id="polyline_nama" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Jarak (meter)</label>
-                        <input type="number" step="0.01" id="jarak" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Keterangan</label>
-                        <textarea id="polyline_keterangan"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Warna</label>
-                        <input type="color" id="polyline_warna" value="#3b82f6">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Simpan Polyline
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetForm('polyline')">
-                        <i class="fas fa-times"></i> Batal
-                    </button>
-                </form>
-
-                <hr style="margin: 20px 0; border: none; border-top: 2px solid #e2e8f0;">
-
-                <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 15px; color: #1e293b;">
-                    <i class="fas fa-list"></i> Daftar Polyline
-                </h3>
-                <div class="data-list" id="list-polyline"></div>
-            </div>
-
-            <!-- Marker Tab -->
-            <div class="tab-content" id="marker-tab">
-                <div class="info-box">
-                    <i class="fas fa-info-circle"></i> Klik pada peta untuk menambah marker
-                </div>
-
-                <form id="form-marker">
-                    <input type="hidden" id="marker_id">
-                    <input type="hidden" id="marker_lat">
-                    <input type="hidden" id="marker_lng">
-
-                    <div class="form-group">
-                        <label>Nama Marker</label>
-                        <input type="text" id="marker_nama" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Tipe</label>
-                        <select id="marker_tipe" required>
-                            <option value="">Pilih Tipe</option>
-                            <option value="Kantor">Kantor</option>
-                            <option value="Sekolah">Sekolah</option>
-                            <option value="Rumah Sakit">Rumah Sakit</option>
-                            <option value="Tempat Ibadah">Tempat Ibadah</option>
-                            <option value="Fasilitas Umum">Fasilitas Umum</option>
-                            <option value="Lainnya">Lainnya</option>
+                        <label>Keperluan</label>
+                        <select id="polygon_keperluan" required>
+                            <option value="">-- Pilih --</option>
+                            <option>Perumahan</option>
+                            <option>Pertanian</option>
+                            <option>Industri</option>
+                            <option>Lainnya</option>
                         </select>
                     </div>
-
+                    <div class="form-group" id="keperluan-manual-group" style="display:none;">
+                        <label>Keperluan (Lainnya)</label>
+                        <input type="text" id="polygon_keperluan_manual" placeholder="Masukkan keperluan lain...">
+                    </div>
                     <div class="form-group">
-                        <label>Deskripsi</label>
-                        <textarea id="marker_deskripsi"></textarea>
+                        <label>Kategori</label>
+                        <select id="polygon_keterangan" required onchange="updatePolygonPreview()">
+                            <option value="">-- Pilih --</option>
+                            <option>Tanah Permukiman</option>
+                            <option>Tanah Pertanian</option>
+                            <option>Tanah Perkebunan</option>
+                            <option>Tanah Industri</option>
+                            <option>Lahan Kosong</option>
+                            <option>Lainnya</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="polygon_warna">
+
+                    <div class="file-upload-section">
+                        <label><i class="fas fa-camera"></i> Foto Tanah (Opsional)</label>
+                        <input type="file" id="polygon_file" class="file-input" accept=".jpg,.jpeg,.png">
+                        <div style="font-size:11px;color:#64748b;margin-top:4px;">JPG/PNG, max 5MB</div>
                     </div>
 
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Simpan Marker
+                        <i class="fas fa-save"></i> Simpan Area
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetForm('marker')">
+                    <button type="button" class="btn btn-secondary" onclick="hideForm()">
                         <i class="fas fa-times"></i> Batal
                     </button>
                 </form>
-
-                <hr style="margin: 20px 0; border: none; border-top: 2px solid #e2e8f0;">
-
-                <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 15px; color: #1e293b;">
-                    <i class="fas fa-list"></i> Daftar Marker
-                </h3>
-                <div class="data-list" id="list-marker"></div>
             </div>
+
+            <!-- ========== DAFTAR TANAH ========== -->
+            <div class="section-title">
+                <i class="fas fa-layer-group"></i> Daftar Tanah
+            </div>
+            <div class="search-box">
+                <input type="text" class="search-input" id="search-polygon" placeholder="Cari NIK / Nama...">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+            <div class="data-count" id="count-polygon"></div>
+            <div id="count-hint" style="font-size:12px;color:#64748b;text-align:center;margin-bottom:8px;">Tip: Gunakan kotak pencarian untuk menampilkan item lainnya.</div>
+            <div class="data-list" id="list-polygon"></div>
+            <button class="btn btn-new" onclick="showForm('create')">
+                <i class="fas fa-plus"></i> Buat Area Baru
+            </button>
+            <div class="load-more-section" id="loadmore-polygon" style="display:none;">
+                <button class="btn-load-more" onclick="toggleLoadMore('polygon', this)">
+                    <i class="fas fa-chevron-down"></i> Muat Lebih Banyak
+                </button>
+            </div>
+
+            <!-- Marker list removed (user requested) -->
+
         </div>
     </div>
 
-    <!-- Loading Overlay -->
+    <!-- Loading -->
     <div class="loading-overlay" id="loading">
         <div class="spinner"></div>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+        <!-- Map Legend (overlay) -->
+        <button id="toggle-legend-btn" class="legend-toggle" title="Sembunyikan Legenda">
+            <i class="fas fa-book"></i>
+        </button>
+        <div id="map-legend" class="map-legend" aria-hidden="false">
+            <h4>Legenda Peta/Tanda Tanah Peta</h4>
+            <div class="legend-row"><div class="legend-swatch" style="background:#ef4444"></div> Tanah Permukiman</div>
+            <div class="legend-row"><div class="legend-swatch" style="background:#10b981"></div> Tanah Pertanian</div>
+            <div class="legend-row"><div class="legend-swatch" style="background:#1B5E20"></div> Tanah Perkebunan</div>
+            <div class="legend-row"><div class="legend-swatch" style="background:#A0522D"></div> Tanah Industri</div>
+            <div class="legend-row"><div class="legend-swatch" style="background:#94a3b8"></div> Lahan Kosong</div>
+            <div class="legend-row"><div class="legend-swatch" style="background:#64748b"></div> Lainnya</div>
 
-    <script>
-      // Initialize Map
-const map = L.map('map').setView([-6.9175, 107.6191], 13); // Bandung coordinates
+            <hr style="margin:8px 0;">
+            <!-- POI legend (grouped, OSM-like categories) -->
+            <div class="legend-group">
+                <div class="legend-group-header">Kesehatan</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#ef4444"><i class="fas fa-hospital" style="font-size:11px"></i></span> Rumah Sakit</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#ef4444"><i class="fas fa-clinic-medical" style="font-size:11px"></i></span> Klinik / Puskesmas</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#ef4444"><i class="fas fa-prescription-bottle-medical" style="font-size:11px"></i></span> Apotek</div>
+            </div>
+            <div class="legend-group">
+                <div class="legend-group-header">Makanan & Minuman</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#f97316"><i class="fas fa-utensils" style="font-size:11px"></i></span> Restoran</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#f97316"><i class="fas fa-coffee" style="font-size:11px"></i></span> Kafe</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#f97316"><i class="fas fa-bread-slice" style="font-size:11px"></i></span> Toko Roti / Bakery</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#fb923c"><i class="fas fa-wine-glass" style="font-size:11px"></i></span> Bar / Pub</div>
+            </div>
+            <div class="legend-group">
+                <div class="legend-group-header">Akomodasi</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#7c3aed"><i class="fas fa-bed" style="font-size:11px"></i></span> Hotel / Penginapan</div>
+            </div>
+            <div class="legend-group">
+                <div class="legend-group-header">Pendidikan & Budaya</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#2563eb"><i class="fas fa-school" style="font-size:11px"></i></span> Sekolah</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#0ea5a4"><i class="fas fa-book" style="font-size:11px"></i></span> Perpustakaan</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#ef4444"><i class="fas fa-landmark" style="font-size:11px"></i></span> Museum</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#ef4444"><i class="fas fa-film" style="font-size:11px"></i></span> Bioskop / Teater</div>
+            </div>
+            <div class="legend-group">
+                <div class="legend-group-header">Transportasi</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#06b6d4"><i class="fas fa-bus" style="font-size:11px"></i></span> Halte Bus</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#06b6d4"><i class="fas fa-train" style="font-size:11px"></i></span> Stasiun Kereta</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#94a3b8"><i class="fas fa-parking" style="font-size:11px"></i></span> Parkir</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#f97316"><i class="fas fa-gas-pump" style="font-size:11px"></i></span> Pom Bensin</div>
+            </div>
+            <div class="legend-group">
+                <div class="legend-group-header">Perdagangan & Layanan</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#16a34a"><i class="fas fa-shopping-bag" style="font-size:11px"></i></span> Toko</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#16a34a"><i class="fas fa-store" style="font-size:11px"></i></span> Supermarket</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#0f172a"><i class="fas fa-building-columns" style="font-size:11px"></i></span> Bank</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#f59e0b"><i class="fas fa-shop" style="font-size:11px"></i></span> Pasar / Bazaar</div>
+            </div>
+            <div class="legend-group">
+                <div class="legend-group-header">Layanan Publik & Keamanan</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#0ea5a4"><i class="fas fa-shield-alt" style="font-size:11px"></i></span> Kepolisian</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#0ea5a4"><i class="fas fa-envelope" style="font-size:11px"></i></span> Kantor Pos</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#374151"><i class="fas fa-landmark" style="font-size:11px"></i></span> Gedung Pemerintah</div>
+            </div>
+            <div class="legend-group">
+                <div class="legend-group-header">Tempat Ibadah</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#7f1d1d"><i class="fas fa-place-of-worship" style="font-size:11px"></i></span> Rumah Ibadah</div>
+            </div>
+            <div class="legend-group">
+                <div class="legend-group-header">Rekreasi & Olahraga</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#059669"><i class="fas fa-football-ball" style="font-size:11px"></i></span> Stadion / Lapangan Olahraga</div>
+                <div class="legend-row"><span class="legend-poi" style="background:#059669"><i class="fas fa-tree" style="font-size:11px"></i></span> Taman</div>
+            </div>
+            <div class="legend-group">
+                <div class="legend-group-header">Lainnya</div>
+                <div class="legend-row"><span style="display:inline-block;width:10px;height:10px;background:#94a3b8;margin-right:8px;border-radius:2px"></span> Lainnya (ikon sesuai OSM)</div>
+            </div>
+        </div>
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 19
-}).addTo(map);
+ <!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script>
+    const kategoriColors = {
+        "Tanah Permukiman": "#ef4444",
+        "Tanah Pertanian": "#10b981",
+        "Tanah Perkebunan": "#1B5E20",
+        "Tanah Industri": "#A0522D",
+        "Lahan Kosong": "#94a3b8",
+        "Lainnya": "#64748b"
+    };
 
-// CSRF Token Setup
-const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    let dataStore = { penduduk: [], polygon: [], marker: [] };
+    let displayState = {
+        // default show 3 items in polygon list (per user request)
+        polygon: { shown: 3, search: '', isSearching: false },
+        marker: { shown: 5, search: '', isSearching: false }
+    };
 
-// Layer Groups
-const pendudukLayer = L.layerGroup().addTo(map);
-const polygonLayer = L.layerGroup().addTo(map);
-const polylineLayer = L.layerGroup().addTo(map);
-const markerLayer = L.layerGroup().addTo(map);
+    // MAP dengan ZOOM di KANAN
+    const map = L.map('map', {
+        zoomControl: false
+    }).setView([-6.9175, 107.6191], 15);
+    
+    // ✅ ZOOM CONTROL DI KANAN ATAS
+    L.control.zoom({
+        position: 'topright'
+    }).addTo(map);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
 
-// Drawing variables
-let currentDrawing = null;
-let drawingMode = null;
+    // center the zoom control vertically on the right side
+    // We'll adjust CSS for the zoom control below (in style block)
 
-// Tab Switching
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const tab = this.dataset.tab;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const polygonLayer = L.layerGroup().addTo(map);
+    const markerLayer = L.layerGroup().addTo(map);
+
+    let currentDrawing = null;
+    let tempDrawLayer = null;
+    let nearbyLayer = L.layerGroup().addTo(map);
+    let currentNearbyType = null;
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('🚀 Sistem dimulai...');
+        loadPendudukList();
+        setupSearchListeners();
+        setupLuasInputs();
+        setupNearbyPlaces();
+        loadAllData();
+        // show legend button initial state
+    });
+
+    // ✅ SETUP INPUT LUAS - ADA 2 FIELD SEKARANG!
+    function setupLuasInputs() {
+        // Field Luas Otomatis (readonly, dari gambar polygon)
+        const luasAuto = document.getElementById('luas');
+        if (luasAuto) {
+            luasAuto.readOnly = true;
+            luasAuto.style.backgroundColor = '#f3f4f6';
+            luasAuto.placeholder = "Otomatis dari gambar polygon";
+        }
+
+        // Field Luas Detail Manual (opsional, user bisa ketik)
+        const luasDetail = document.getElementById('luas_detail');
+        if (luasDetail) {
+            luasDetail.readOnly = false;
+            luasDetail.placeholder = "Masukkan luas detail (opsional)";
+            
+            luasDetail.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9.,]/g, '');
+            });
+
+            // Tambah hint
+            const parent = luasDetail.parentElement;
+            let hint = parent.querySelector('.luas-hint');
+            if (!hint) {
+                hint = document.createElement('small');
+                hint.className = 'luas-hint';
+                hint.style.cssText = 'display:block; color:#94a3b8; margin-top:4px; font-size:12px;';
+                hint.innerHTML = '💡 Isi manual jika ada pengukuran detail yang berbeda';
+                parent.appendChild(hint);
+            }
+        }
+
+        console.log('✅ Input luas sudah setup (otomatis + detail opsional)');
+        // Setup manual keperluan input show/hide when user picks 'Lainnya'
+        const keperluanSelect = document.getElementById('polygon_keperluan');
+        const manualGroup = document.getElementById('keperluan-manual-group');
+        const manualInput = document.getElementById('polygon_keperluan_manual');
+        if (keperluanSelect) {
+            const toggleManual = () => {
+                if (keperluanSelect.value === 'Lainnya') {
+                    if (manualGroup) manualGroup.style.display = 'block';
+                } else {
+                    if (manualGroup) manualGroup.style.display = 'none';
+                    if (manualInput) manualInput.value = '';
+                }
+            };
+            keperluanSelect.addEventListener('change', toggleManual);
+            // initial state
+            toggleManual();
+        }
+    }
+
+    // Show/Hide Form
+    function showForm(mode = 'create', item = null) {
+        const form = document.getElementById('form-area');
+        form.classList.add('active');
+        resetForm('polygon');
         
-        // Update buttons
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
+        if (mode === 'edit' && item) {
+            console.log('✏️ EDIT MODE - Item:', item);
+            document.getElementById('polygon_id').value = item.id || '';
+            document.getElementById('polygon_penduduk_id').value = item.penduduk_id || '';
+            
+            // Set input penduduk (autocomplete)
+            const pendudukInput = document.getElementById('polygon_penduduk');
+            if (pendudukInput && item.nama && item.nik) {
+                pendudukInput.value = `${item.nama} (${item.nik})`;
+            }
+            
+            document.getElementById('polygon_coordinates').value = item.coordinates || '';
+            document.getElementById('luas').value = item.luas || '';
+            document.getElementById('luas_detail').value = item.luas_detail || '';
+            // handle keperluan + manual keperluan
+            const keperluanSelect = document.getElementById('polygon_keperluan');
+            const manualGroup = document.getElementById('keperluan-manual-group');
+            const manualInput = document.getElementById('polygon_keperluan_manual');
+            if (keperluanSelect) {
+                // if the stored keperluan is not one of the select options, treat it as manual
+                const opts = Array.from(keperluanSelect.options).map(o => o.value);
+                if (item.keperluan && !opts.includes(item.keperluan)) {
+                    keperluanSelect.value = 'Lainnya';
+                    if (manualGroup) manualGroup.style.display = 'block';
+                    if (manualInput) manualInput.value = item.keperluan;
+                } else {
+                    keperluanSelect.value = item.keperluan || '';
+                    if (manualGroup) manualGroup.style.display = 'none';
+                    if (manualInput) manualInput.value = '';
+                }
+            }
+            document.getElementById('polygon_keterangan').value = item.keterangan || '';
+            document.getElementById('polygon_warna').value = item.warna || '#94a3b8';
+            
+            // Tampilkan di peta
+            if (item.coordinates) {
+                try {
+                    const coords = (typeof item.coordinates === 'string') ? JSON.parse(item.coordinates) : item.coordinates;
+                    if (tempDrawLayer) map.removeLayer(tempDrawLayer);
+                    tempDrawLayer = L.polygon(coords, { 
+                        color: item.warna || '#94a3b8', 
+                        fillOpacity: 0.4, 
+                        dashArray: '10,10',
+                        weight: 3
+                    }).addTo(map);
+                    map.fitBounds(tempDrawLayer.getBounds());
+                } catch (e) {
+                    console.error('Error parsing coordinates:', e);
+                }
+            }
+        }
         
-        // Update content
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById(tab + '-tab').classList.add('active');
+        document.getElementById('form-polygon')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function hideForm() {
+        document.getElementById('form-area')?.classList.remove('active');
+        resetForm('polygon');
+    }
+
+    // Search
+    function setupSearchListeners() {
+        ['polygon', 'marker'].forEach(type => {
+            const input = document.getElementById(`search-${type}`);
+            if (input) {
+                input.addEventListener('input', (e) => {
+                    const val = e.target.value.trim().toLowerCase();
+                    displayState[type].search = val;
+                    displayState[type].isSearching = val.length > 0;
+                    // when searching, reset shown to a small default (3 for polygon)
+                    displayState[type].shown = (type === 'polygon') ? 3 : 5;
+                    renderList(type);
+                });
+            }
+        });
+    }
+
+    // Render List
+    function renderList(type) {
+        const list = document.getElementById(`list-${type}`);
+        const count = document.getElementById(`count-${type}`);
+        const loadmore = document.getElementById(`loadmore-${type}`);
         
-        // Stop drawing when switching tabs
+        if (!list) return;
+        
+        const filtered = filterData(type);
+        const shown = displayState[type].shown;
+
+        list.innerHTML = '';
+        if (filtered.length === 0) {
+            list.innerHTML = `<div class="no-data">📂 Belum ada data polygon</div>`;
+            if (count) count.textContent = '';
+            if (loadmore) loadmore.style.display = 'none';
+            return;
+        }
+
+        const toShow = filtered.slice(0, shown);
+        if (count) count.textContent = `Menampilkan ${toShow.length} dari ${filtered.length}`;
+        toShow.forEach(item => list.appendChild(createListItem(type, item)));
+        if (loadmore) {
+            const moreBtn = loadmore.querySelector('.btn-load-more');
+            if (toShow.length < filtered.length) {
+                loadmore.style.display = 'block';
+                if (moreBtn) moreBtn.innerHTML = `<i class="fas fa-chevron-down"></i> Muat Lebih Banyak`;
+            } else if (filtered.length > ((type === 'polygon') ? 3 : 5)) {
+                // if showing all, offer "Sembunyikan"
+                loadmore.style.display = 'block';
+                if (moreBtn) moreBtn.innerHTML = `<i class="fas fa-chevron-up"></i> Sembunyikan`;
+            } else {
+                loadmore.style.display = 'none';
+            }
+        }
+    }
+
+    // Toggle load more / hide for lists
+    function toggleLoadMore(type, btn) {
+        const filtered = filterData(type);
+        if (!filtered || filtered.length === 0) return;
+        const currentShown = displayState[type].shown;
+        const defaultShown = (type === 'polygon') ? 3 : 5;
+        if (currentShown < filtered.length) {
+            // show all
+            displayState[type].shown = filtered.length;
+            if (btn) btn.innerHTML = `<i class="fas fa-chevron-up"></i> Sembunyikan`;
+        } else {
+            // hide back to default
+            displayState[type].shown = defaultShown;
+            if (btn) btn.innerHTML = `<i class="fas fa-chevron-down"></i> Muat Lebih Banyak`;
+            // ensure scroll to top of list
+            const list = document.getElementById(`list-${type}`);
+            if (list) list.scrollTop = 0;
+        }
+        renderList(type);
+    }
+
+    function filterData(type) {
+        const search = displayState[type].search;
+        if (!search) return dataStore[type];
+        return dataStore[type].filter(item => {
+            if (type === 'polygon') {
+                const nama = (item.nama || '').toLowerCase();
+                const nik = (item.nik || '').toLowerCase();
+                const keperluan = (item.keperluan || '').toLowerCase();
+                return nama.includes(search) || nik.includes(search) || keperluan.includes(search);
+            }
+            return (item.nama || '').toLowerCase().includes(search);
+        });
+    }
+
+    function createListItem(type, item) {
+        const div = document.createElement('div');
+        div.className = 'data-item';
+        
+        if (type === 'polygon') {
+            div.onclick = () => viewPolygon(item.id);
+            
+            // Store item in global scope untuk onclick
+            window[`polygonItem${item.id}`] = item;
+            
+            const luasDisplay = item.luas_detail ? `${item.luas_detail} m² (detail)` : `${item.luas} m²`;
+            
+            div.innerHTML = `
+                <div class="data-item-header">
+                    <div class="data-item-title">${item.nama || item.keperluan || 'Tanah'}</div>
+                    <div class="data-item-actions">
+                        <button class="btn-icon edit" onclick="event.stopPropagation(); showForm('edit', window.polygonItem${item.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon delete" onclick="event.stopPropagation(); deletePolygon(${item.id})" title="Hapus">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="data-item-info">
+                    <strong>NIK:</strong> ${item.nik || '-'} | 
+                    <strong>Luas:</strong> ${luasDisplay} | 
+                    <strong>Kategori:</strong> ${item.keterangan || '-'}
+                </div>
+            `;
+        }
+        return div;
+    }
+
+    function loadMoreData(type) {
+        displayState[type].shown += 5;
+        renderList(type);
+    }
+
+    // Drawing
+    function startDrawing() {
+        if (tempDrawLayer) { map.removeLayer(tempDrawLayer); tempDrawLayer = null; }
+        if (currentDrawing) currentDrawing.disable();
+
+        currentDrawing = new L.Draw.Polygon(map, { 
+            shapeOptions: { color: '#3b82f6', fillOpacity: 0.3, weight: 3 }, 
+            showArea: true 
+        });
+        currentDrawing.enable();
+        
+        console.log('🖊️ Mode gambar aktif');
+    }
+
+    function stopDrawing() {
+        if (currentDrawing) {
+            currentDrawing.disable();
+            currentDrawing = null;
+        }
+    }
+
+    map.on(L.Draw.Event.CREATED, function(e) {
+        const layer = e.layer;
+        if (tempDrawLayer) map.removeLayer(tempDrawLayer);
+        
+        const coords = layer.getLatLngs()[0].map(ll => [ll.lat, ll.lng]);
+        const coordsStr = JSON.stringify(coords);
+        document.getElementById('polygon_coordinates').value = coordsStr;
+        
+        // Hitung luas otomatis
+        const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]).toFixed(2);
+        document.getElementById('luas').value = area;
+        
+        console.log('✅ Polygon digambar! Luas otomatis:', area, 'm²');
+
+        const color = document.getElementById('polygon_warna')?.value || '#94a3b8';
+        tempDrawLayer = L.polygon(coords, { 
+            color: color, 
+            fillOpacity: 0.4, 
+            dashArray: '10,10',
+            weight: 3
+        }).addTo(map);
+        
+        tempDrawLayer.bindPopup(`
+            <strong>Preview Polygon</strong><br>
+            Luas Otomatis: ${area} m²<br>
+            <small>Anda bisa isi Luas Detail secara manual di form</small>
+        `).openPopup();
+        
         stopDrawing();
     });
-});
 
-// Map Click Handler
-map.on('click', function(e) {
-    const activeTab = document.querySelector('.tab-content.active').id;
-    
-    if (activeTab === 'penduduk-tab') {
-        document.getElementById('penduduk_lat').value = e.latlng.lat;
-        document.getElementById('penduduk_lng').value = e.latlng.lng;
-        showAlert('success', 'Lokasi dipilih! Silakan isi form.');
-    } else if (activeTab === 'marker-tab') {
-        document.getElementById('marker_lat').value = e.latlng.lat;
-        document.getElementById('marker_lng').value = e.latlng.lng;
-        showAlert('success', 'Lokasi marker dipilih! Silakan isi form.');
-    }
-});
-
-// Drawing Functions
-function startDrawing(type) {
-    stopDrawing();
-    drawingMode = type;
-    
-    if (type === 'polygon') {
-        currentDrawing = new L.Draw.Polygon(map);
-    } else if (type === 'polyline') {
-        currentDrawing = new L.Draw.Polyline(map);
-    }
-    
-    currentDrawing.enable();
-    showAlert('success', 'Mode gambar aktif. Klik pada peta untuk membuat titik.');
-}
-
-function stopDrawing() {
-    if (currentDrawing) {
-        currentDrawing.disable();
-        currentDrawing = null;
-    }
-    drawingMode = null;
-}
-
-// Handle created shapes
-map.on(L.Draw.Event.CREATED, function(e) {
-    const layer = e.layer;
-    const type = e.layerType;
-    
-    if (type === 'polygon') {
-        const coordinates = JSON.stringify(layer.getLatLngs()[0].map(ll => [ll.lat, ll.lng]));
-        document.getElementById('polygon_coordinates').value = coordinates;
-        
-        // Calculate area
-        const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
-        document.getElementById('luas').value = area.toFixed(2);
-        
-        showAlert('success', 'Polygon berhasil digambar! Silakan lengkapi form.');
-    } else if (type === 'polyline') {
-        const coordinates = JSON.stringify(layer.getLatLngs().map(ll => [ll.lat, ll.lng]));
-        document.getElementById('polyline_coordinates').value = coordinates;
-        
-        // Calculate distance
-        let distance = 0;
-        const latlngs = layer.getLatLngs();
-        for (let i = 0; i < latlngs.length - 1; i++) {
-            distance += latlngs[i].distanceTo(latlngs[i + 1]);
-        }
-        document.getElementById('jarak').value = distance.toFixed(2);
-        
-        showAlert('success', 'Polyline berhasil digambar! Silakan lengkapi form.');
-    }
-    
-    stopDrawing();
-});
-
-// Helper function untuk handle response dengan error checking yang lebih baik
-async function handleResponse(response) {
-    const contentType = response.headers.get('content-type');
-    
-    // Check if response is JSON
-    if (contentType && contentType.includes('application/json')) {
-        return await response.json();
-    } else {
-        // If not JSON, get text to see what the server actually returned
-        const text = await response.text();
-        console.error('Server returned non-JSON response:', text);
-        throw new Error('Server mengembalikan response yang tidak valid. Periksa koneksi ke server.');
-    }
-}
-
-// CRUD Functions - Penduduk
-document.getElementById('form-penduduk').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const id = document.getElementById('penduduk_id').value;
-    const data = {
-        nik: document.getElementById('nik').value,
-        nama: document.getElementById('nama').value,
-        alamat: document.getElementById('alamat').value,
-        telepon: document.getElementById('telepon').value,
-        latitude: document.getElementById('penduduk_lat').value,
-        longitude: document.getElementById('penduduk_lng').value
-    };
-    
-    // Validasi data
-    if (!data.latitude || !data.longitude) {
-        showAlert('error', 'Silakan pilih lokasi pada peta terlebih dahulu!');
-        return;
-    }
-    
-    const url = id ? `/penduduk/penduduk/${id}` : '/penduduk/penduduk';
-    const method = id ? 'PUT' : 'POST';
-    
-    try {
-        showLoading(true);
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await handleResponse(response);
-        
-        if (response.ok) {
-            showAlert('success', id ? 'Data penduduk berhasil diupdate!' : 'Data penduduk berhasil disimpan!');
-            resetForm('penduduk');
-            loadPenduduk();
-        } else {
-            showAlert('error', result.message || 'Terjadi kesalahan saat menyimpan data!');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showAlert('error', 'Gagal menyimpan data: ' + error.message);
-    } finally {
-        showLoading(false);
-    }
-});
-
-async function loadPenduduk() {
-    try {
-        const response = await fetch('/penduduk/penduduk', {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const data = await handleResponse(response);
-        
-        pendudukLayer.clearLayers();
-        const listContainer = document.getElementById('list-penduduk');
-        listContainer.innerHTML = '';
-        
-        if (!Array.isArray(data)) {
-            console.error('Data is not an array:', data);
-            return;
-        }
-        
-        data.forEach(item => {
-            // Add marker to map
-            const marker = L.marker([item.latitude, item.longitude], {
-                icon: L.divIcon({
-                    html: '<i class="fas fa-user" style="color: #10b981; font-size: 24px;"></i>',
-                    className: 'custom-div-icon',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30]
-                })
-            }).addTo(pendudukLayer);
+    // 🔥 FORM SUBMIT - FIXED UNTUK DATABASE (TANPA FILE)
+    const formPolygon = document.getElementById('form-polygon');
+    if (formPolygon) {
+        formPolygon.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            marker.bindPopup(`
-                <strong>${item.nama}</strong><br>
-                NIK: ${item.nik}<br>
-                ${item.alamat}<br>
-                Telp: ${item.telepon || '-'}
-            `);
+            console.log('');
+            console.log('='.repeat(60));
+            console.log('🚀 MULAI PROSES SUBMIT POLYGON');
+            console.log('='.repeat(60));
             
-            // Add to list
-            listContainer.innerHTML += `
-                <div class="data-item">
-                    <div class="data-item-header">
-                        <div class="data-item-title">${item.nama}</div>
-                        <div class="data-item-actions">
-                            <button class="btn-icon view" onclick="viewOnMap(${item.latitude}, ${item.longitude})">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn-icon edit" onclick="editPenduduk(${item.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon delete" onclick="deletePenduduk(${item.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="data-item-info">
-                        NIK: ${item.nik}<br>
-                        Alamat: ${item.alamat}
-                    </div>
-                </div>
-            `;
-        });
-    } catch (error) {
-        console.error('Error loading penduduk:', error);
-        showAlert('error', 'Gagal memuat data penduduk: ' + error.message);
-    }
-}
-
-async function editPenduduk(id) {
-    try {
-        const response = await fetch(`/penduduk/penduduk/${id}`, {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const data = await handleResponse(response);
-        
-        document.getElementById('penduduk_id').value = data.id;
-        document.getElementById('nik').value = data.nik;
-        document.getElementById('nama').value = data.nama;
-        document.getElementById('alamat').value = data.alamat;
-        document.getElementById('telepon').value = data.telepon || '';
-        document.getElementById('penduduk_lat').value = data.latitude;
-        document.getElementById('penduduk_lng').value = data.longitude;
-        
-        viewOnMap(data.latitude, data.longitude);
-    } catch (error) {
-        console.error('Error editing penduduk:', error);
-        showAlert('error', 'Gagal memuat data: ' + error.message);
-    }
-}
-
-async function deletePenduduk(id) {
-    if (!confirm('Yakin ingin menghapus data ini?')) return;
-    
-    try {
-        showLoading(true);
-        const response = await fetch(`/penduduk/penduduk/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            showAlert('success', 'Data berhasil dihapus!');
-            loadPenduduk();
-        } else {
-            const result = await handleResponse(response);
-            showAlert('error', result.message || 'Gagal menghapus data');
-        }
-    } catch (error) {
-        console.error('Error deleting penduduk:', error);
-        showAlert('error', 'Terjadi kesalahan: ' + error.message);
-    } finally {
-        showLoading(false);
-    }
-}
-
-// CRUD Functions - Polygon
-document.getElementById('form-polygon').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const id = document.getElementById('polygon_id').value;
-    const coordinatesValue = document.getElementById('polygon_coordinates').value;
-    
-    // Validasi coordinates
-    if (!coordinatesValue) {
-        showAlert('error', 'Silakan gambar polygon pada peta terlebih dahulu!');
-        return;
-    }
-    
-    const data = {
-        nama: document.getElementById('polygon_nama').value,
-        luas: document.getElementById('luas').value,
-        keterangan: document.getElementById('polygon_keterangan').value,
-        warna: document.getElementById('polygon_warna').value,
-        coordinates: coordinatesValue
-    };
-    
-    const url = id ? `/polygon/polygon/${id}` : '/polygon/polygon';
-    const method = id ? 'PUT' : 'POST';
-    
-    try {
-        showLoading(true);
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await handleResponse(response);
-        
-        if (response.ok) {
-            showAlert('success', id ? 'Polygon berhasil diupdate!' : 'Polygon berhasil disimpan!');
-            resetForm('polygon');
-            loadPolygon();
-        } else {
-            showAlert('error', result.message || 'Terjadi kesalahan saat menyimpan polygon!');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showAlert('error', 'Gagal menyimpan data: ' + error.message);
-    } finally {
-        showLoading(false);
-    }
-});
-
-async function loadPolygon() {
-    try {
-        const response = await fetch('/polygon/polygon', {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const data = await handleResponse(response);
-        
-        polygonLayer.clearLayers();
-        const listContainer = document.getElementById('list-polygon');
-        listContainer.innerHTML = '';
-        
-        if (!Array.isArray(data)) {
-            console.error('Data is not an array:', data);
-            return;
-        }
-        
-        data.forEach(item => {
-            const coordinates = JSON.parse(item.coordinates);
-            const polygon = L.polygon(coordinates, {
-                color: item.warna,
-                fillColor: item.warna,
-                fillOpacity: 0.4
-            }).addTo(polygonLayer);
+            const id = document.getElementById('polygon_id')?.value.trim() || '';
+            const coords = document.getElementById('polygon_coordinates')?.value.trim() || '';
+            const pendudukId = document.getElementById('polygon_penduduk_id')?.value.trim() || '';
+            const nik = document.getElementById('polygon_nik')?.value.trim() || '';
+            const luasAuto = document.getElementById('luas')?.value.trim() || '';
+            const luasDetail = document.getElementById('luas_detail')?.value.trim() || '';
+            // keperluan: prefer manual input when 'Lainnya' is selected
+            const _keperluanSelect = document.getElementById('polygon_keperluan')?.value.trim() || '';
+            const _keperluanManual = document.getElementById('polygon_keperluan_manual')?.value.trim() || '';
+            const keperluan = (_keperluanSelect === 'Lainnya' && _keperluanManual) ? _keperluanManual : (_keperluanSelect || 'Tidak disebutkan');
+            const keterangan = document.getElementById('polygon_keterangan')?.value.trim() || '';
+            const warna = document.getElementById('polygon_warna')?.value.trim() || '#94a3b8';
+            const nama = document.getElementById('polygon_nama')?.value.trim() || '';
             
-            polygon.bindPopup(`
-                <strong>${item.nama}</strong><br>
-                Luas: ${item.luas} m²<br>
-                ${item.keterangan || ''}
-            `);
+            // VALIDASI
+            if (!coords) {
+                alert('⚠️ Gambar polygon dulu di peta!');
+                return;
+            }
+            if (!pendudukId) {
+                alert('⚠️ Pilih penduduk terlebih dahulu!');
+                return;
+            }
+            if (!nama) {
+                alert('⚠️ Nama pemilik belum terisi! Pilih penduduk dulu.');
+                return;
+            }
+            if (!luasAuto || parseFloat(luasAuto) <= 0) {
+                alert('⚠️ Luas otomatis belum terisi! Gambar polygon dulu.');
+                return;
+            }
+
+            // ✅ KIRIM DATA PAKAI JSON (BUKAN FormData)
+                const payload = {
+                    nama: nama,
+                    penduduk_id: parseInt(pendudukId),
+                    nik: nik,
+                    coordinates: coords,
+                    luas: parseFloat(luasAuto.replace(',', '.')),
+                    luas_detail: luasDetail ? parseFloat(luasDetail.replace(',', '.')) : null,
+                    keperluan: keperluan || 'Tidak disebutkan',
+                    keterangan: keterangan || 'Lainnya',
+                    warna: warna
+                };
+
+            console.log('📦 Data yang dikirim:');
+            console.log('   Mode:', id ? 'UPDATE (ID: ' + id + ')' : 'CREATE (NEW)');
+            console.log('   Penduduk ID:', payload.penduduk_id);
+            console.log('   Luas Otomatis:', payload.luas, 'm²');
+            console.log('   Luas Detail:', payload.luas_detail || '(tidak diisi)');
+            console.log('   Keperluan:', payload.keperluan);
+            console.log('   Kategori:', payload.keterangan);
+            console.log('   Warna:', payload.warna);
+
+            try {
+                showLoading(true);
+
+                // URL dan Method (default)
+                const url = id ? `/polygon/polygon/${id}` : '/polygon/polygon';
+                const method = id ? 'PUT' : 'POST';
+
+                // Jika user memilih file, kirim sebagai FormData (multipart)
+                const fileInput = document.getElementById('polygon_file');
+                const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+
+                let fetchUrl = url;
+                let fetchMethod = method;
+                let fetchOptions = {
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                };
+
+                if (hasFile) {
+                    // Untuk upload file kita gunakan FormData. Beberapa server/PHP tidak
+                    // mem-parsing file pada PUT, jadi gunakan POST + _method=PUT untuk update.
+                    const form = new FormData();
+                    // include required 'nama' for Laravel validation
+                    form.append('nama', payload.nama);
+                    form.append('penduduk_id', payload.penduduk_id);
+                    form.append('nik', payload.nik);
+                    // Pastikan coordinates dikirim sebagai JSON string
+                    try {
+                        const coordsArr = typeof coords === 'string' ? JSON.parse(coords) : coords;
+                        form.append('coordinates', JSON.stringify(coordsArr));
+                    } catch (e) {
+                        form.append('coordinates', coords);
+                    }
+                    form.append('luas', payload.luas);
+                    if (payload.luas_detail !== null) form.append('luas_detail', payload.luas_detail);
+                    form.append('keperluan', payload.keperluan);
+                    form.append('keterangan', payload.keterangan);
+                    form.append('warna', payload.warna);
+                    form.append('file', fileInput.files[0]);
+
+                    if (id) {
+                        // override method for Laravel when updating with multipart
+                        form.append('_method', 'PUT');
+                        fetchMethod = 'POST';
+                    } else {
+                        fetchMethod = 'POST';
+                    }
+
+                    fetchOptions.method = fetchMethod;
+                    fetchOptions.body = form;
+
+                    console.log('');
+                    console.log('📡 Request Details:');
+                    console.log('   URL:', fetchUrl);
+                    console.log('   Method:', fetchMethod, hasFile ? '(multipart/form-data)' : '');
+                } else {
+                    // Kirim JSON biasa
+                    fetchOptions.method = method;
+                    fetchOptions.headers['Content-Type'] = 'application/json';
+                    fetchOptions.body = JSON.stringify(payload);
+
+                    console.log('');
+                    console.log('📡 Request Details:');
+                    console.log('   URL:', fetchUrl);
+                    console.log('   Method:', fetchOptions.method);
+                    console.log('   Content-Type: application/json');
+                }
+
+                const response = await fetch(fetchUrl, fetchOptions);
+
+                console.log('');
+                console.log('📥 Response:', response.status, response.statusText);
+
+                if (response.ok) {
+                    const result = await response.json().catch(() => ({}));
+                    console.log('✅ Response Data:', result);
+                    console.log('');
+                    console.log('🎉 BERHASIL! Data', id ? 'diupdate' : 'disimpan', 'ke database!');
+                    console.log('='.repeat(60));
+                    
+                    const luasDetailText = payload.luas_detail ? `\nLuas Detail: ${payload.luas_detail} m² (manual)` : '';
+                    const successMsg = `✅ BERHASIL ${id ? 'UPDATE' : 'SIMPAN'}!\n\n` +
+                        `Keperluan: ${keperluan}\n` +
+                        `Luas Otomatis: ${payload.luas} m²${luasDetailText}\n` +
+                        `Kategori: ${keterangan}`;
+                    
+                    alert(successMsg);
+                    
+                    hideForm();
+                    await loadPolygon();
+                    
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ Response Error:', errorText);
+                    console.log('='.repeat(60));
+                    
+                    let errorMsg = `Gagal ${id ? 'update' : 'menyimpan'} data`;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.message) {
+                            errorMsg = errorJson.message;
+                        }
+                        if (errorJson.errors) {
+                            const errors = Object.entries(errorJson.errors)
+                                .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+                                .join('\n');
+                            errorMsg += '\n\nDetail error:\n' + errors;
+                        }
+                    } catch (e) {
+                        if (errorText.includes('required') || errorText.includes('validation')) {
+                            errorMsg += '\n\nKemungkinan ada field yang belum diisi dengan benar.';
+                        }
+                        errorMsg += '\n\nResponse: ' + errorText.substring(0, 300);
+                    }
+                    
+                    alert('❌ ' + errorMsg);
+                }
+
+            } catch (err) { 
+                console.error('💥 FATAL ERROR:', err);
+                console.log('='.repeat(60));
+                alert('⚠️ Error koneksi ke server!\n\nDetail: ' + err.message + '\n\nCek console untuk info lengkap.');
+            } finally { 
+                showLoading(false); 
+            }
+        });
+    }
+
+    // Load Polygon dari Database
+    async function loadPolygon() {
+        console.log('');
+        console.log('📥 Loading data polygon dari database...');
+        
+        try {
+            const response = await fetch('/polygon/polygon', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
             
-            listContainer.innerHTML += `
-                <div class="data-item">
-                    <div class="data-item-header">
-                        <div class="data-item-title">${item.nama}</div>
-                        <div class="data-item-actions">
-                            <button class="btn-icon view" onclick="viewPolygon(${item.id})">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn-icon edit" onclick="editPolygon(${item.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon delete" onclick="deletePolygon(${item.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="data-item-info">
-                        Luas: ${item.luas} m²<br>
-                        ${item.keterangan || '-'}
-                    </div>
-                </div>
-            `;
-        });
-    } catch (error) {
-        console.error('Error loading polygon:', error);
-        showAlert('error', 'Gagal memuat data polygon: ' + error.message);
-    }
-}
-
-async function editPolygon(id) {
-    try {
-        const response = await fetch(`/polygon/polygon/${id}`, {
-            headers: {
-                'Accept': 'application/json'
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-        });
-        const data = await handleResponse(response);
-        
-        document.getElementById('polygon_id').value = data.id;
-        document.getElementById('polygon_nama').value = data.nama;
-        document.getElementById('luas').value = data.luas;
-        document.getElementById('polygon_keterangan').value = data.keterangan || '';
-        document.getElementById('polygon_warna').value = data.warna;
-        document.getElementById('polygon_coordinates').value = data.coordinates;
-        
-        // Switch to polygon tab
-        document.querySelector('[data-tab="polygon"]').click();
-        viewPolygon(id);
-    } catch (error) {
-        console.error('Error editing polygon:', error);
-        showAlert('error', 'Gagal memuat data: ' + error.message);
-    }
-}
-
-async function viewPolygon(id) {
-    try {
-        const response = await fetch(`/polygon/polygon/${id}`, {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const data = await handleResponse(response);
-        const coordinates = JSON.parse(data.coordinates);
-        
-        if (coordinates.length > 0) {
-            const bounds = L.latLngBounds(coordinates);
-            map.fitBounds(bounds);
-        }
-    } catch (error) {
-        console.error('Error viewing polygon:', error);
-        showAlert('error', 'Gagal menampilkan polygon: ' + error.message);
-    }
-}
-
-async function deletePolygon(id) {
-    if (!confirm('Yakin ingin menghapus polygon ini?')) return;
-    
-    try {
-        showLoading(true);
-        const response = await fetch(`/polygon/polygon/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            showAlert('success', 'Polygon berhasil dihapus!');
-            loadPolygon();
-        } else {
-            const result = await handleResponse(response);
-            showAlert('error', result.message || 'Gagal menghapus polygon');
-        }
-    } catch (error) {
-        console.error('Error deleting polygon:', error);
-        showAlert('error', 'Terjadi kesalahan: ' + error.message);
-    } finally {
-        showLoading(false);
-    }
-}
-
-// CRUD Functions - Polyline
-document.getElementById('form-polyline').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const id = document.getElementById('polyline_id').value;
-    const coordinatesValue = document.getElementById('polyline_coordinates').value;
-    
-    // Validasi coordinates
-    if (!coordinatesValue) {
-        showAlert('error', 'Silakan gambar polyline pada peta terlebih dahulu!');
-        return;
-    }
-    
-    const data = {
-        nama: document.getElementById('polyline_nama').value,
-        jarak: document.getElementById('jarak').value,
-        keterangan: document.getElementById('polyline_keterangan').value,
-        warna: document.getElementById('polyline_warna').value,
-        coordinates: coordinatesValue
-    };
-    
-    const url = id ? `/polyline/polyline/${id}` : '/polyline/polyline';
-    const method = id ? 'PUT' : 'POST';
-    
-    try {
-        showLoading(true);
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await handleResponse(response);
-        
-        if (response.ok) {
-            showAlert('success', id ? 'Polyline berhasil diupdate!' : 'Polyline berhasil disimpan!');
-            resetForm('polyline');
-            loadPolyline();
-        } else {
-            showAlert('error', result.message || 'Terjadi kesalahan saat menyimpan polyline!');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showAlert('error', 'Gagal menyimpan data: ' + error.message);
-    } finally {
-        showLoading(false);
-    }
-});
-
-async function loadPolyline() {
-    try {
-        const response = await fetch('/polyline/polyline', {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const data = await handleResponse(response);
-        
-        polylineLayer.clearLayers();
-        const listContainer = document.getElementById('list-polyline');
-        listContainer.innerHTML = '';
-        
-        if (!Array.isArray(data)) {
-            console.error('Data is not an array:', data);
-            return;
-        }
-        
-        data.forEach(item => {
-            const coordinates = JSON.parse(item.coordinates);
-            const polyline = L.polyline(coordinates, {
-                color: item.warna,
-                weight: 4
-            }).addTo(polylineLayer);
             
-            polyline.bindPopup(`
-                <strong>${item.nama}</strong><br>
-                Jarak: ${item.jarak} meter<br>
-                ${item.keterangan || ''}
-            `);
+            const data = await response.json();
+            console.log('✅ Berhasil load', data.length, 'polygon dari database');
             
-            listContainer.innerHTML += `
-                <div class="data-item">
-                    <div class="data-item-header">
-                        <div class="data-item-title">${item.nama}</div>
-                        <div class="data-item-actions">
-                            <button class="btn-icon view" onclick="viewPolyline(${item.id})">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn-icon edit" onclick="editPolyline(${item.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon delete" onclick="deletePolyline(${item.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="data-item-info">
-                        Jarak: ${item.jarak} meter<br>
-                        ${item.keterangan || '-'}
-                    </div>
-                </div>
-            `;
-        });
-    } catch (error) {
-        console.error('Error loading polyline:', error);
-        showAlert('error', 'Gagal memuat data polyline: ' + error.message);
-    }
-}
+            // Simpan ke store
+            dataStore.polygon = Array.isArray(data) ? data : [];
+            
+            // Clear layer lama
+            polygonLayer.clearLayers();
+            
+            // Render setiap polygon ke peta
+            dataStore.polygon.forEach((item, idx) => {
+                try {
+                    const coords = (typeof item.coordinates === 'string') ? JSON.parse(item.coordinates) : item.coordinates;
+                    const poly = L.polygon(coords, { 
+                        color: item.warna || '#94a3b8', 
+                        fillOpacity: 0.5,
+                        weight: 2
+                    }).addTo(polygonLayer);
+                    
+                    const luasDisplay = item.luas_detail 
+                        ? `${item.luas_detail} m² (detail)` 
+                        : `${item.luas} m²`;
 
-async function editPolyline(id) {
-    try {
-        const response = await fetch(`/polyline/polyline/${id}`, {
-            headers: {
-                'Accept': 'application/json'
+                    // bind popup only if area info display is enabled
+                    if (window.showAreaInfo === undefined || window.showAreaInfo === true) {
+                        poly.bindPopup(`
+                            <div style="min-width:200px;">
+                                <strong style="font-size:14px;">${item.nama || item.keperluan || 'Tanah'}</strong><br>
+                                <hr style="margin:5px 0;">
+                                <strong>NIK:</strong> ${item.nik || '-'}<br>
+                                <strong>Keperluan:</strong> ${item.keperluan || '-'}<br>
+                                <strong>Kategori:</strong> ${item.keterangan || '-'}<br>
+                                <strong>Luas Otomatis:</strong> ${item.luas} m²<br>
+                                ${item.luas_detail ? `<strong>Luas Detail:</strong> ${item.luas_detail} m² (manual)<br>` : ''}
+                            </div>
+                        `);
+                    }
+                    
+                    console.log(`   ✓ Polygon #${idx + 1}: ${item.nama || item.keperluan}`);
+                } catch (e) {
+                    console.error(`   ✗ Error render polygon #${idx + 1}:`, e);
+                }
+            });
+            
+            // Render list sidebar
+            renderList('polygon');
+            
+            console.log('✅ Semua polygon berhasil ditampilkan');
+            
+        } catch (err) {
+            console.error('❌ Load polygon error:', err);
+            dataStore.polygon = [];
+            renderList('polygon');
+        }
+    }
+
+    function viewPolygon(id) {
+        const item = dataStore.polygon.find(p => p.id == id);
+        if (item && item.coordinates) {
+            try {
+                const coords = (typeof item.coordinates === 'string') ? JSON.parse(item.coordinates) : item.coordinates;
+                map.fitBounds(L.latLngBounds(coords));
+                
+                // Buka popup
+                polygonLayer.eachLayer(layer => {
+                    if (layer.getLatLngs) {
+                        const layerCoords = JSON.stringify(layer.getLatLngs()[0].map(ll => [ll.lat, ll.lng]));
+                        const itemCoordsStr = (typeof item.coordinates === 'string') ? item.coordinates : JSON.stringify(item.coordinates);
+                        if (layerCoords === itemCoordsStr) {
+                            layer.openPopup();
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('View polygon error:', e);
+            }
+        }
+    }
+
+    async function deletePolygon(id) {
+        if (!confirm('⚠️ Yakin hapus polygon ini?\n\nData yang dihapus tidak bisa dikembalikan!')) return;
+        
+        console.log('🗑️ Menghapus polygon ID:', id);
+        
+        try {
+            showLoading(true);
+            
+            const response = await fetch(`/polygon/polygon/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (response.ok) {
+                console.log('✅ Delete berhasil!');
+                alert('✅ Polygon berhasil dihapus dari database!');
+                await loadPolygon();
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Delete gagal:', errorText);
+                alert('❌ Gagal menghapus polygon\n\n' + errorText.substring(0, 200));
+            }
+        } catch (err) {
+            console.error('💥 Delete error:', err);
+            alert('⚠️ Error: ' + err.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function updatePolygonPreview() {
+        const kat = document.getElementById('polygon_keterangan')?.value;
+        const color = kategoriColors[kat] || '#94a3b8';
+        const warnaInput = document.getElementById('polygon_warna');
+        if (warnaInput) warnaInput.value = color;
+        if (tempDrawLayer) {
+            tempDrawLayer.setStyle({ color, fillColor: color });
+        }
+    }
+
+    function resetForm(type) {
+        const form = document.getElementById(`form-${type}`);
+        if (form) form.reset();
+        
+        const idField = document.getElementById(`${type}_id`);
+        if (idField) idField.value = '';
+        
+        if (type === 'polygon') {
+            const coordsField = document.getElementById('polygon_coordinates');
+            const pendudukIdField = document.getElementById('polygon_penduduk_id');
+            const pendudukInput = document.getElementById('polygon_penduduk');
+            const luasField = document.getElementById('luas');
+            const luasDetailField = document.getElementById('luas_detail');
+            
+            if (coordsField) coordsField.value = '';
+            if (pendudukIdField) pendudukIdField.value = '';
+            if (pendudukInput) pendudukInput.value = '';
+            if (luasField) luasField.value = '';
+            if (luasDetailField) luasDetailField.value = '';
+            // clear manual keperluan
+            const manualGroup = document.getElementById('keperluan-manual-group');
+            const manualInput = document.getElementById('polygon_keperluan_manual');
+            const keperluanSelect = document.getElementById('polygon_keperluan');
+            if (manualGroup) manualGroup.style.display = 'none';
+            if (manualInput) manualInput.value = '';
+            if (keperluanSelect) keperluanSelect.value = '';
+            
+            if (tempDrawLayer) { 
+                map.removeLayer(tempDrawLayer); 
+                tempDrawLayer = null; 
+            }
+        }
+        stopDrawing();
+    }
+
+    function showLoading(show) {
+        const loading = document.getElementById('loading');
+        if (loading) {
+            loading.classList.toggle('active', show);
+        }
+    }
+
+    // Geometry Util
+    L.GeometryUtil = L.extend(L.GeometryUtil || {}, {
+        geodesicArea: function (latLngs) {
+            let area = 0;
+            const len = latLngs.length;
+            if (len > 2) {
+                for (let i = 0; i < len; i++) {
+                    const p1 = latLngs[i], p2 = latLngs[(i + 1) % len];
+                    area += (p2.lng - p1.lng) * (2 + Math.sin(p1.lat * Math.PI / 180) + Math.sin(p2.lat * Math.PI / 180));
+                }
+                area = area * 6378137 * 6378137 / 2;
+            }
+            return Math.abs(area);
+        }
+    });
+
+    async function loadAllData() {
+        await loadPolygon();
+    }
+
+    async function loadPendudukList() {
+        console.log('👥 Loading daftar penduduk...');
+        try {
+            const res = await fetch('/penduduk/penduduk', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            
+            const data = await res.json();
+            dataStore.penduduk = data;
+            console.log('✅ Berhasil load', data.length, 'penduduk');
+            
+            const dl = document.getElementById('penduduk-list');
+            if (dl) {
+                dl.innerHTML = '';
+                data.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = `${p.nama} (${p.nik})`;
+                    dl.appendChild(opt);
+                });
+            }
+        } catch (err) {
+            console.error('❌ Load penduduk error:', err);
+        }
+    }
+
+    // -----------------------------
+    // Map Geocoding Search (Nominatim)
+    // -----------------------------
+    let searchMarker = null;
+    async function geocodeQuery(q) {
+        if (!q || q.trim().length === 0) return [];
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&q=${encodeURIComponent(q)}`;
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return [];
+            const data = await res.json();
+            return data;
+        } catch (e) {
+            console.error('Geocode error:', e);
+            return [];
+        }
+    }
+
+    function renderMapSearchResults(results) {
+        const container = document.getElementById('map-search-results');
+        container.innerHTML = '';
+        if (!results || results.length === 0) return;
+        const box = document.createElement('div');
+        box.className = 'results';
+        results.forEach(r => {
+            const item = document.createElement('div');
+            item.className = 'result-item';
+            item.innerHTML = `<strong>${r.display_name.split(',')[0]}</strong><br><small style="color:#64748b">${r.display_name}</small>`;
+            item.onclick = () => {
+                // zoom to location and show marker
+                const lat = parseFloat(r.lat);
+                const lon = parseFloat(r.lon);
+                map.setView([lat, lon], 18);
+                if (searchMarker) map.removeLayer(searchMarker);
+                searchMarker = L.marker([lat, lon]).addTo(map);
+                searchMarker.bindPopup(`<strong>${r.display_name}</strong>`).openPopup();
+                container.innerHTML = '';
+            };
+            box.appendChild(item);
+        });
+        container.appendChild(box);
+    }
+
+    function clearMapSearchResults() {
+        const container = document.getElementById('map-search-results');
+        if (container) container.innerHTML = '';
+    }
+
+    // hook search input
+    (function setupMapSearch() {
+        const input = document.getElementById('map-search-input');
+        const btn = document.getElementById('map-search-btn');
+        const refreshBtn = document.getElementById('map-refresh-btn');
+        const legendBtn = document.getElementById('toggle-legend-btn');
+        const legend = document.getElementById('map-legend');
+        const container = document.getElementById('map-search-results');
+
+        if (legendBtn && legend) {
+            // initialize legend visible state
+            legend.style.display = 'block';
+            legendBtn.title = 'Sembunyikan Legenda';
+            legendBtn.addEventListener('click', () => {
+                if (legend.style.display === 'none') {
+                    legend.style.display = 'block';
+                    legendBtn.title = 'Sembunyikan Legenda';
+                } else {
+                    legend.style.display = 'none';
+                    legendBtn.title = 'Tampilkan Legenda';
+                }
+            });
+        }
+
+        if (!input) return;
+        let debounceTimer = null;
+        let currentResults = [];
+        let selectedIndex = -1;
+
+        input.addEventListener('keydown', (e) => {
+            if (currentResults.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, currentResults.length - 1);
+                updateSelection();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, -1);
+                updateSelection();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedIndex >= 0 && selectedIndex < currentResults.length) {
+                    chooseResult(currentResults[selectedIndex]);
+                } else if (currentResults.length > 0) {
+                    chooseResult(currentResults[0]);
+                }
             }
         });
-        const data = await handleResponse(response);
-        
-        document.getElementById('polyline_id').value = data.id;
-        document.getElementById('polyline_nama').value = data.nama;
-        document.getElementById('jarak').value = data.jarak;
-        document.getElementById('polyline_keterangan').value = data.keterangan || '';
-        document.getElementById('polyline_warna').value = data.warna;
-        document.getElementById('polyline_coordinates').value = data.coordinates;
-        
-        document.querySelector('[data-tab="polyline"]').click();
-        viewPolyline(id);
-    } catch (error) {
-        console.error('Error editing polyline:', error);
-        showAlert('error', 'Gagal memuat data: ' + error.message);
-    }
-}
 
-async function viewPolyline(id) {
-    try {
-        const response = await fetch(`/polyline/polyline/${id}`, {
-            headers: {
-                'Accept': 'application/json'
+        input.addEventListener('input', (e) => {
+            const q = e.target.value.trim();
+            selectedIndex = -1;
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(async () => {
+                if (q.length < 2) { clearMapSearchResults(); currentResults = []; return; }
+                const res = await geocodeQuery(q);
+                currentResults = res;
+                renderMapSearchResults(res);
+            }, 300); // Faster response
+        });
+
+        btn.addEventListener('click', async () => {
+            const q = input.value.trim();
+            if (!q) return alert('Masukkan kata kunci pencarian terlebih dahulu');
+            const res = await geocodeQuery(q);
+            currentResults = res;
+            if (!res || res.length === 0) return alert('Lokasi tidak ditemukan');
+            chooseResult(res[0]);
+            renderMapSearchResults(res);
+        });
+
+        refreshBtn.addEventListener('click', () => {
+            // Clear search input
+            input.value = '';
+            // Clear results
+            container.innerHTML = '';
+            // Remove search marker
+            if (searchMarker) {
+                map.removeLayer(searchMarker);
+                searchMarker = null;
+            }
+            // Hide nearby places
+            const nearbyDiv = document.getElementById('nearby-places');
+            if (nearbyDiv) nearbyDiv.style.display = 'none';
+            // Clear nearby layer
+            nearbyLayer.clearLayers();
+            currentNearbyType = null;
+            // Reset nearby buttons
+            const buttons = document.querySelectorAll('.nearby-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            // Reset map view to initial
+            map.setView([-6.9175, 107.6191], 15);
+        });
+
+        // click outside to clear
+        document.addEventListener('click', (ev) => {
+            const container = document.getElementById('map-search-results');
+            const target = ev.target;
+            if (!container) return;
+            if (!container.contains(target) && target !== input && target !== btn) {
+                container.innerHTML = '';
             }
         });
-        const data = await handleResponse(response);
-        const coordinates = JSON.parse(data.coordinates);
-        
-        if (coordinates.length > 0) {
-            const bounds = L.latLngBounds(coordinates);
-            map.fitBounds(bounds);
-        }
-    } catch (error) {
-        console.error('Error viewing polyline:', error);
-        showAlert('error', 'Gagal menampilkan polyline: ' + error.message);
-    }
-}
 
-async function deletePolyline(id) {
-    if (!confirm('Yakin ingin menghapus polyline ini?')) return;
-    
-    try {
-        showLoading(true);
-        const response = await fetch(`/polyline/polyline/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
+        function updateSelection() {
+            const items = container.querySelectorAll('.result-item');
+            items.forEach((item, idx) => {
+                if (idx === selectedIndex) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        function chooseResult(r) {
+            autoZoomTo(r);
+            container.innerHTML = '';
+            currentResults = [];
+            selectedIndex = -1;
+            // Show nearby places after search
+            const nearbyDiv = document.getElementById('nearby-places');
+            if (nearbyDiv) nearbyDiv.style.display = 'flex';
+        }
+
+        function autoZoomTo(r) {
+            if (!r) return;
+            try {
+                const lat = parseFloat(r.lat);
+                const lon = parseFloat(r.lon);
+                map.setView([lat, lon], 18);
+                if (searchMarker) map.removeLayer(searchMarker);
+                searchMarker = L.marker([lat, lon]).addTo(map);
+                searchMarker.bindPopup(`<strong>${r.display_name}</strong>`).openPopup();
+            } catch (e) { console.error('Auto zoom error', e); }
+        }
+    })();
+
+    function fillPendudukData() {
+        const val = document.getElementById('polygon_penduduk')?.value;
+        const p = dataStore.penduduk.find(x => `${x.nama} (${x.nik})` === val);
+        
+        if (p) {
+            const pendudukIdField = document.getElementById('polygon_penduduk_id');
+            if (pendudukIdField) pendudukIdField.value = p.id;
+            console.log('✓ Penduduk dipilih:', p.nama, '(ID:', p.id, ')');
+            
+            const nikField = document.getElementById('polygon_nik');
+            const namaField = document.getElementById('polygon_nama');
+            
+            if (nikField) nikField.value = p.nik;
+            if (namaField) namaField.value = p.nama;
+        }
+    }
+
+    // Event listeners
+    const keteranganSelect = document.getElementById('polygon_keterangan');
+    if (keteranganSelect) {
+        keteranganSelect.addEventListener('change', updatePolygonPreview);
+    }
+
+    console.log('');
+    console.log('='.repeat(60));
+    console.log('🗺️ POLYGON MAP SYSTEM READY!');
+    console.log('='.repeat(60));
+    console.log('✅ Fitur Aktif:');
+    console.log('   📍 Zoom control: Kanan atas');
+    console.log('   📏 Luas otomatis: Dari polygon');
+    console.log('   ✏️  Luas detail: Manual opsional');
+    console.log('   💾 Database: Save/Update/Delete');
+    console.log('   🔍 Search: Nama, NIK, Keperluan');
+    console.log('='.repeat(60));
+
+    // Nearby places functionality
+    function setupNearbyPlaces() {
+        const buttons = document.querySelectorAll('.nearby-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const type = this.getAttribute('data-type');
+                if (currentNearbyType === type) {
+                    // Toggle off if same type
+                    nearbyLayer.clearLayers();
+                    currentNearbyType = null;
+                    buttons.forEach(b => b.classList.remove('active'));
+                } else {
+                    // Switch to new type
+                    currentNearbyType = type;
+                    buttons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    fetchNearbyPlaces(type);
+                }
+            });
+        });
+    }
+
+    async function fetchNearbyPlaces(type) {
+        const center = map.getCenter();
+        const radius = 1000; // 1km radius
+
+        const overpassQuery = `
+            [out:json][timeout:25];
+            (
+                node["amenity"="${type}"](around:${radius},${center.lat},${center.lng});
+                way["amenity"="${type}"](around:${radius},${center.lat},${center.lng});
+                relation["amenity"="${type}"](around:${radius},${center.lat},${center.lng});
+            );
+            out center;
+        `;
+
+        try {
+            const response = await fetch('https://overpass-api.de/api/interpreter', {
+                method: 'POST',
+                body: overpassQuery
+            });
+
+            if (!response.ok) throw new Error('Overpass API error');
+
+            const data = await response.json();
+            displayNearbyPlaces(data.elements, type);
+        } catch (error) {
+            console.error('Error fetching nearby places:', error);
+            alert('Gagal memuat tempat terdekat. Coba lagi nanti.');
+        }
+    }
+
+    function displayNearbyPlaces(elements, type) {
+        nearbyLayer.clearLayers();
+
+        elements.forEach(element => {
+            let lat, lon, name;
+
+            if (element.type === 'node') {
+                lat = element.lat;
+                lon = element.lon;
+                name = element.tags?.name || `${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            } else if (element.type === 'way' || element.type === 'relation') {
+                if (element.center) {
+                    lat = element.center.lat;
+                    lon = element.center.lon;
+                    name = element.tags?.name || `${type.charAt(0).toUpperCase() + type.slice(1)}`;
+                } else {
+                    return; // Skip if no center
+                }
+            }
+
+            if (lat && lon) {
+                const marker = L.marker([lat, lon]).addTo(nearbyLayer);
+                marker.bindPopup(`
+                    <strong>${name}</strong><br>
+                    <small>Jenis: ${getTypeLabel(type)}</small>
+                `);
             }
         });
-        
-        if (response.ok) {
-            showAlert('success', 'Polyline berhasil dihapus!');
-            loadPolyline();
-        } else {
-            const result = await handleResponse(response);
-            showAlert('error', result.message || 'Gagal menghapus polyline');
-        }
-    } catch (error) {
-        console.error('Error deleting polyline:', error);
-        showAlert('error', 'Terjadi kesalahan: ' + error.message);
-    } finally {
-        showLoading(false);
-    }
-}
 
-// CRUD Functions - Marker
-document.getElementById('form-marker').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const id = document.getElementById('marker_id').value;
-    const data = {
-        nama: document.getElementById('marker_nama').value,
-        tipe: document.getElementById('marker_tipe').value,
-        deskripsi: document.getElementById('marker_deskripsi').value,
-        latitude: document.getElementById('marker_lat').value,
-        longitude: document.getElementById('marker_lng').value
-    };
-    
-    // Validasi data
-    if (!data.latitude || !data.longitude) {
-        showAlert('error', 'Silakan pilih lokasi pada peta terlebih dahulu!');
-        return;
-    }
-    
-    const url = id ? `/marker/marker/${id}` : '/marker/marker';
-    const method = id ? 'PUT' : 'POST';
-    
-    try {
-        showLoading(true);
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await handleResponse(response);
-        
-        if (response.ok) {
-            showAlert('success', id ? 'Marker berhasil diupdate!' : 'Marker berhasil disimpan!');
-            resetForm('marker');
-            loadMarker();
-        } else {
-            showAlert('error', result.message || 'Terjadi kesalahan saat menyimpan marker!');
+        if (elements.length === 0) {
+            alert(`Tidak ada ${getTypeLabel(type)} ditemukan di sekitar lokasi ini.`);
         }
-    } catch (error) {
-        console.error('Error:', error);
-        showAlert('error', 'Gagal menyimpan data: ' + error.message);
-    } finally {
-        showLoading(false);
     }
-});
 
-async function loadMarker() {
-    try {
-        const response = await fetch('/marker/marker', {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const data = await handleResponse(response);
-        
-        markerLayer.clearLayers();
-        const listContainer = document.getElementById('list-marker');
-        listContainer.innerHTML = '';
-        
-        if (!Array.isArray(data)) {
-            console.error('Data is not an array:', data);
-            return;
-        }
-        
-        const markerIcons = {
-            'Kantor': 'fa-building',
-            'Sekolah': 'fa-school',
-            'Rumah Sakit': 'fa-hospital',
-            'Tempat Ibadah': 'fa-place-of-worship',
-            'Fasilitas Umum': 'fa-landmark',
-            'Lainnya': 'fa-map-pin'
+    function getTypeLabel(type) {
+        const labels = {
+            restaurant: 'Restoran',
+            hospital: 'Rumah Sakit',
+            school: 'Sekolah',
+            bank: 'Bank',
+            fuel: 'SPBU'
         };
-        
-        data.forEach(item => {
-            const iconClass = markerIcons[item.tipe] || 'fa-map-pin';
-            const marker = L.marker([item.latitude, item.longitude], {
-                icon: L.divIcon({
-                    html: `<i class="fas ${iconClass}" style="color: #ef4444; font-size: 24px;"></i>`,
-                    className: 'custom-div-icon',
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30]
-                })
-            }).addTo(markerLayer);
-            
-            marker.bindPopup(`
-                <strong>${item.nama}</strong><br>
-                Tipe: ${item.tipe}<br>
-                ${item.deskripsi || ''}
-            `);
-            
-            listContainer.innerHTML += `
-                <div class="data-item">
-                    <div class="data-item-header">
-                        <div class="data-item-title">${item.nama}</div>
-                        <div class="data-item-actions">
-                            <button class="btn-icon view" onclick="viewOnMap(${item.latitude}, ${item.longitude})">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn-icon edit" onclick="editMarker(${item.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon delete" onclick="deleteMarker(${item.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="data-item-info">
-                        Tipe: ${item.tipe}<br>
-                        ${item.deskripsi || '-'}
-                    </div>
-                </div>
-            `;
-        });
-    } catch (error) {
-        console.error('Error loading marker:', error);
-        showAlert('error', 'Gagal memuat data marker: ' + error.message);
+        return labels[type] || type;
     }
-}
 
-async function editMarker(id) {
-    try {
-        const response = await fetch(`/marker/marker/${id}`, {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const data = await handleResponse(response);
-        
-        document.getElementById('marker_id').value = data.id;
-        document.getElementById('marker_nama').value = data.nama;
-        document.getElementById('marker_tipe').value = data.tipe;
-        document.getElementById('marker_deskripsi').value = data.deskripsi || '';
-        document.getElementById('marker_lat').value = data.latitude;
-        document.getElementById('marker_lng').value = data.longitude;
-        
-        viewOnMap(data.latitude, data.longitude);
-    } catch (error) {
-        console.error('Error editing marker:', error);
-        showAlert('error', 'Gagal memuat data: ' + error.message);
-    }
-}
-
-async function deleteMarker(id) {
-    if (!confirm('Yakin ingin menghapus marker ini?')) return;
-    
-    try {
-        showLoading(true);
-        const response = await fetch(`/marker/marker/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            showAlert('success', 'Marker berhasil dihapus!');
-            loadMarker();
-        } else {
-            const result = await handleResponse(response);
-            showAlert('error', result.message || 'Gagal menghapus marker');
-        }
-    } catch (error) {
-        console.error('Error deleting marker:', error);
-        showAlert('error', 'Terjadi kesalahan: ' + error.message);
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Helper Functions
-function viewOnMap(lat, lng) {
-    map.setView([lat, lng], 16);
-}
-
-function resetForm(type) {
-    document.getElementById(`form-${type}`).reset();
-    document.getElementById(`${type}_id`).value = '';
-    
-    if (type === 'polygon') {
-        document.getElementById('polygon_coordinates').value = '';
-    } else if (type === 'polyline') {
-        document.getElementById('polyline_coordinates').value = '';
-    }
-}
-
-function showAlert(type, message) {
-    const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
-    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
-    
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert ${alertClass}`;
-    alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-    
-    const activeTab = document.querySelector('.tab-content.active');
-    if (activeTab) {
-        activeTab.insertBefore(alertDiv, activeTab.firstChild);
-        
-        setTimeout(() => alertDiv.remove(), 5000);
-    }
-}
-
-function showLoading(show) {
-    const loadingElement = document.getElementById('loading');
-    if (loadingElement) {
-        loadingElement.classList.toggle('active', show);
-    }
-}
-
-// Load all data on page load
-window.addEventListener('load', function() {
-    loadPenduduk();
-    loadPolygon();
-    loadPolyline();
-    loadMarker();
-});
-
-// Leaflet GeometryUtil for area calculation
-L.GeometryUtil = L.extend(L.GeometryUtil || {}, {
-    geodesicArea: function (latLngs) {
-        var pointsCount = latLngs.length,
-            area = 0.0,
-            d2r = Math.PI / 180,
-            p1, p2;
-
-        if (pointsCount > 2) {
-            for (var i = 0; i < pointsCount; i++) {
-                p1 = latLngs[i];
-                p2 = latLngs[(i + 1) % pointsCount];
-                area += ((p2.lng - p1.lng) * d2r) *
-                        (2 + Math.sin(p1.lat * d2r) + Math.sin(p2.lat * d2r));
-            }
-            area = area * 6378137.0 * 6378137.0 / 2.0;
-        }
-
-        return Math.abs(area);
-    }
-});
-    </script>
+    // Expose functions to global scope so inline onclick handlers can find them reliably
+    window.showForm = showForm;
+    window.hideForm = hideForm;
+    window.startDrawing = startDrawing;
+    window.stopDrawing = stopDrawing;
+</script>
 </body>
 </html>

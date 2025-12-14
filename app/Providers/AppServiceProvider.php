@@ -6,19 +6,17 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-
+        // Ganti cara memanggilnya jadi seperti ini (PASTI JALAN!)
+        // Kita panggil lewat facade Gate, bukan langsung app()
+        \Illuminate\Support\Facades\Gate::after(function ($user, $ability) {
+            return $user->hasPermissionTo($ability) ? true : null;
+        });
     }
 }

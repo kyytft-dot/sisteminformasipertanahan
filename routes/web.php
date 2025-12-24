@@ -52,7 +52,7 @@ Route::post('/login', function (Request $request) {
 
     if (Auth::attempt($credentials)) {
         $request->session()->regenerate();
-        return redirect('/');
+        return redirect('/dashboard');
     }
     return back()->with('error', 'Email atau password salah!');
 });
@@ -70,14 +70,15 @@ Route::post('/logout', function (Request $request) {
 Route::middleware('auth')->group(function () {
 
     // DASHBOARD
-    Route::get('/', function () {
+    Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 
     // === USER MASYARAKAT HANYA BISA INI ===
     Route::get('/peta', fn() => view('lihat-peta'));
     Route::get('/ten', fn() => view('tentang'));
-    Route::get('/chatbot', fn() => view('chatbot'));
+    // UPDATE: Chatbot sekarang BISA DIAKSES TANPA LOGIN (PUBLIC) agar tombol di landing page bisa langsung masuk
+    // Route::get('/chatbot', fn() => view('chatbot'));
 
     // ===================================================================
     // PENGATURAN PROFIL — BARU & BENAR (PAKAI PATCH (TIDAK ERROR LAGI!)
@@ -192,7 +193,19 @@ Route::middleware('auth')->group(function () {
 });
 
 // ========================================
-// 3. SEMUA YANG BELUM LOGIN → KE LOGIN
+// 3. FRONTEND PUBLIC
+// ========================================
+Route::get('/', function () {
+    return view('frontend');
+})->name('frontend');
+
+// === UPDATE: ROUTE CHATBOT DIPINDAHKAN KE PUBLIC AGAR BISA DIAKSES DARI LANDING PAGE TANPA LOGIN ===
+Route::get('/chatbot', function () {
+    return view('chatbot');
+})->name('chatbot');
+
+// ========================================
+// 4. SEMUA YANG BELUM LOGIN → KE LOGIN
 // ========================================
 Route::get('{any}', function () {
     return redirect('/login');

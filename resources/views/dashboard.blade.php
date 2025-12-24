@@ -158,12 +158,14 @@
                 </a>
             </li>
             <!-- MENU MANAJEMEN PENGGUNA -->
+            @if(auth()->user()->getRoleNames()->first() === 'admin')
             <li class="nav-item">
                 <a class="nav-link" href="javascript:void(0)" onclick="showPage('users')" id="menu-users">
                     <i class="fas fa-users-cog text-info"></i>
                     <span>Manajemen Pengguna</span>
                 </a>
             </li>
+            @endif
             <!-- MENU LAPORAN (BARU) -->
             <li class="nav-item">
                 <a class="nav-link" href="javascript:void(0)" onclick="showPage('laporan')" id="menu-laporan">
@@ -1350,662 +1352,420 @@
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
 
-    <script>
-        // Setup CSRF Token untuk AJAX
-        $.ajaxSetup({
-            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
-        });
+   <script>
+    // Setup CSRF Token untuk semua AJAX
+    $.ajaxSetup({
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+    });
 
-        let dataTable, pendudukTable;
+    let dataTable, pendudukTable;
 
-        // Page Navigation
-        function showPage(page) {
-            $('.page-section').removeClass('active');
-            $('#page-' + page).addClass('active');
-            $('.sidebar .nav-link').removeClass('active-menu');
-            $('#menu-' + page).addClass('active-menu');
+    // Page Navigation (tetap seperti asli)
+    function showPage(page) {
+        $('.page-section').removeClass('active');
+        $('#page-' + page).addClass('active');
+        $('.sidebar .nav-link').removeClass('active-menu');
+        $('#menu-' + page).addClass('active-menu');
 
-            // Force visibility for settings page
-            if (page === 'pengaturan') {
-                $('#page-pengaturan').show();
-            }
-
-            if (page === 'users') loadUsers();
-            if (page === 'datamaster') loadPenduduk();
+        if (page === 'pengaturan') {
+            $('#page-pengaturan').show();
         }
 
-        $(document).ready(function() {
-            // Make dashboard menu active first
-            $('#menu-dashboard').addClass('active-menu');
-        });
+        if (page === 'users') loadUsers();
+        if (page === 'datamaster') loadPenduduk();
+    }
 
-        function submitInviteForm(e) {
-            e.preventDefault();
-            sendInvite();
-        }
+    $(document).ready(function() {
+        // Dashboard aktif pertama
+        $('#menu-dashboard').addClass('active-menu');
 
-        function sendInvite() {
-            const data = {
-                name: $('#inviteName').val().trim(),
-                email: $('#inviteEmail').val().trim(),
-                role: $('#inviteRole').val()
-            };
+        // Load data awal
+        loadPenduduk();
+        loadUsers();
 
-            // Basic validation
-            if (!data.name || !data.email || !data.role) {
-                Swal.fire('Error!', 'Semua field harus diisi!', 'error');
-                return;
-            }
+        // Validasi input penduduk (tetap ada)
+        $('#pendudukNik').on('input', function() { this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16); });
+        $('#pendudukRt, #pendudukRw').on('input', function() { this.value = this.value.replace(/[^0-9]/g, '').slice(0, 3); });
+        $('#pendudukLatitude, #pendudukLongitude').on('input', function() { this.value = this.value.replace(/[^0-9.\-]/g, ''); });
 
-            // Email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(data.email)) {
-                Swal.fire('Error!', 'Format email tidak valid!', 'error');
-                return;
-            }
-
-            $('#sendInviteBtn').prop('disabled', true);
-            $('#sendInviteBtn').html('<i class="fas fa-spinner fa-spin"></i> Membuat...');
-
-            $.ajax({
-                url: '{{ url("/users/invite") }}',
-                method: 'POST',
-                data: data,
-                success: function(response) {
-                    $('#inviteForm')[0].reset();
-
-                    // Show success message and open Gmail
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: response.message,
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        // Open Gmail with pre-filled content
-                        window.open(response.gmail_url, '_blank');
-                    });
-
-                    loadUsers();
-                },
-                error: function(xhr) {
-                    let errorMsg = 'Gagal membuat user';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMsg = xhr.responseJSON.message;
+        // Geolocation (tetap ada)
+        $('#getLocationBtn').on('click', function() {
+            const status = $('#locationStatus');
+            if (navigator.geolocation) {
+                status.text('Mendapatkan lokasi...').removeClass('text-danger text-success').addClass('text-warning');
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        $('#pendudukLatitude').val(pos.coords.latitude.toFixed(6));
+                        $('#pendudukLongitude').val(pos.coords.longitude.toFixed(6));
+                        status.text('Lokasi berhasil!').addClass('text-success').removeClass('text-warning');
+                    },
+                    err => {
+                        status.text('Gagal mendapatkan lokasi').addClass('text-danger');
                     }
-                    Swal.fire('Error!', errorMsg, 'error');
-                },
-                complete: function() {
-                    $('#sendInviteBtn').prop('disabled', false);
-                    $('#sendInviteBtn').html('<i class="fas fa-paper-plane"></i> Kirim Undangan');
-                }
-            });
-        }
-
-        // === USER MANAGEMENT ===
-        function loadUsers() {
-            $.ajax({
-                url: '{{ url("/users/list") }}',
-                method: 'GET',
-                success: function(response) {
-                    let html = '';
-                    response.users.forEach((user, index) => {
-                        const roleName = user.roles && user.roles.length > 0 ? user.roles[0].name : 'user';
-                        const roleClass = roleName === 'admin' ? 'badge-danger' : roleName === 'staff' ? 'badge-warning' : 'badge-info';
-                        const statusClass = user.is_approved ? 'badge-success' : 'badge-warning';
-                        const statusText = user.is_approved ? 'Disetujui' : 'Pending';
-                        const langText = user.language_preference === 'id' ? 'Indonesia' : 'English';
-                        html += '<tr>' +
-                            '<td class="text-center">' + (index + 1) + '</td>' +
-                            '<td><strong>' + user.name + '</strong></td>' +
-                            '<td>' + user.email + '</td>' +
-                            '<td><span class="badge badge-role ' + roleClass + '">' + roleName.toUpperCase() + '</span></td>' +
-                            '<td><span class="badge badge-status ' + statusClass + '">' + statusText + '</span></td>' +
-                            '<td>' + langText + '</td>' +
-                            '<td>' + new Date(user.created_at).toLocaleDateString('id-ID') + '</td>' +
-                            '<td class="text-center table-actions">' +
-                                '<button class="btn btn-sm btn-warning" onclick="editUser(' + user.id + ')" title="Edit">' +
-                                    '<i class="fas fa-edit"></i>' +
-                                '</button>' +
-                                '<button class="btn btn-sm btn-danger" onclick="deleteUser(' + user.id + ')" title="Hapus">' +
-                                    '<i class="fas fa-trash"></i>' +
-                                '</button>' +
-                            '</td>' +
-                        '</tr>';
-                    });
-                    $('#userTableBody').html(html);
-
-                    if (dataTable) dataTable.destroy();
-                    dataTable = $('#usersTable').DataTable({
-                        "language": { "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json" },
-                        "pageLength": 10
-                    });
-                },
-                error: function(xhr) {
-                    Swal.fire('Error!', 'Gagal memuat data pengguna', 'error');
-                }
-            });
-        }
-
-        function openUserModal(action, userId = null) {
-            $('#userForm')[0].reset();
-            $('#formAction').val(action);
-            if (action === 'add') {
-                $('#userModalTitle').text('Tambah Pengguna Baru');
-                $('#userId').val('');
-                $('#userPassword').prop('required', true);
-                $('#passwordRequired').addClass('form-label-required');
-                $('#passwordHint').text('Min. 6 karakter');
-                $('#submitUserBtn').html('<i class="fas fa-save"></i> Simpan');
+                );
             } else {
-                $('#userModalTitle').text('Edit Pengguna');
-                $('#userPassword').prop('required', false);
-                $('#passwordRequired').removeClass('form-label-required');
-                $('#passwordHint').text('Kosongkan jika tidak ingin mengubah password');
-                $('#submitUserBtn').html('<i class="fas fa-save"></i> Update');
+                status.text('Browser tidak mendukung geolokasi').addClass('text-danger');
             }
-            $('#userModal').modal('show');
-        }
-
-        function editUser(id) {
-            $.ajax({
-                url: '{{ url("/users") }}/' + id,
-                method: 'GET',
-                success: function(response) {
-                    openUserModal('edit', id);
-                    $('#userId').val(response.id);
-                    $('#userName').val(response.name);
-                    $('#userEmail').val(response.email);
-                    $('#userRole').val(response.roles && response.roles.length > 0 ? response.roles[0].name : 'user');
-                    $('#userLanguage').val(response.language_preference);
-                    $('#userApproved').val(response.is_approved ? '1' : '0');
-                    $('#userReason').val(response.registration_reason);
-                },
-                error: function(xhr) {
-                    Swal.fire('Error!', 'Gagal memuat data pengguna', 'error');
-                }
-            });
-        }
-
-        function submitUserForm(e) {
-            e.preventDefault();
-            const formData = new FormData($('#userForm')[0]);
-            const action = $('#formAction').val();
-            const userId = $('#userId').val();
-            let url = '{{ url("/users") }}';
-            let method = 'POST';
-            if (action === 'edit') {
-                url = '{{ url("/users") }}/' + userId;
-                formData.append('_method', 'PUT');
-            }
-
-            $('#submitUserBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
-            $.ajax({
-                url: url,
-                method: method,
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    $('#userModal').modal('hide');
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: response.message,
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    loadUsers();
-                },
-                error: function(xhr) {
-                    let errorMsg = 'Terjadi kesalahan';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMsg = xhr.responseJSON.message;
-                    }
-                    Swal.fire('Error!', errorMsg, 'error');
-                },
-                complete: function() {
-                    $('#submitUserBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
-                }
-            });
-        }
-
-        function deleteUser(id) {
-            Swal.fire({
-                title: 'Konfirmasi Hapus',
-                text: "Data pengguna akan dihapus permanen!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `{{ url("/users/users") }}/${id}`,
-                        method: 'DELETE',
-                        success: function(response) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Terhapus!',
-                                text: response.message,
-                                timer: 2000,
-                                showConfirmButton: false
-                            });
-                            loadUsers();
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Error!', 'Gagal menghapus pengguna', 'error');
-                        }
-                    });
-                }
-            });
-        }
-
-        // === DATA MASTER PENDUDUK ===
-        function loadPenduduk(search = '') {
-            $.ajax({
-                url: '{{ url("/penduduk/penduduk") }}',
-                method: 'GET',
-                data: { search: search },
-                success: function(response) {
-                    let html = '';
-                    if (response.length === 0) {
-                        html = `<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data penduduk ditemukan</td></tr>`;
-                    } else {
-                        response.forEach((item, index) => {
-                            html += `
-                                <tr>
-                                    <td class="text-center">${index + 1}</td>
-                                    <td><strong>${item.nik}</strong></td>
-                                    <td>${item.nama}</td>
-                                    <td>${item.alamat.substring(0, 50)}${item.alamat.length > 50 ? '...' : ''}</td>
-                                    <td>${item.rt || '-'}/${item.rw || '-'}</td>
-                                    <td>${item.provinsi || '-'}</td>
-                                    <td class="text-center table-actions">
-                                        <button class="btn btn-sm btn-warning" onclick="editPenduduk(${item.id})" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-danger" onclick="deletePenduduk(${item.id})" title="Hapus">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>`;
-                        });
-                    }
-                    $('#pendudukTableBody').html(html);
-
-                    if (pendudukTable) pendudukTable.destroy();
-                    pendudukTable = $('#pendudukTable').DataTable({
-                        "language": { "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json" },
-                        "pageLength": 10,
-                        "ordering": false,
-                        "searching": false
-                    });
-                },
-                error: function(xhr) {
-                    Swal.fire('Error!', 'Gagal memuat data penduduk', 'error');
-                }
-            });
-        }
-
-        function openPendudukModal(action, data = null) {
-            $('#pendudukForm')[0].reset();
-            $('#pendudukId').val('');
-            $('#pendudukModalTitle').text(action === 'add' ? 'Tambah Penduduk' : 'Edit Penduduk');
-            $('#submitPendudukBtn').html('<i class="fas fa-save"></i> Simpan');
-            $('#locationStatus').text('');
-
-            if (data) {
-                $('#pendudukId').val(data.id);
-                $('#pendudukNik').val(data.nik);
-                $('#pendudukNama').val(data.nama);
-                $('#pendudukAlamat').val(data.alamat);
-                $('#pendudukRt').val(data.rt);
-                $('#pendudukRw').val(data.rw);
-                $('#pendudukProvinsi').val(data.provinsi);
-                $('#pendudukLatitude').val(data.latitude || '');
-                $('#pendudukLongitude').val(data.longitude || '');
-            }
-
-            $('#pendudukModal').modal('show');
-        }
-
-        function editPenduduk(id) {
-            $.ajax({
-                url: `{{ url("/penduduk/penduduk") }}/${id}`,
-                method: 'GET',
-                success: function(response) {
-                    openPendudukModal('edit', response);
-                },
-                error: function(xhr) {
-                    Swal.fire('Error!', 'Gagal memuat data penduduk', 'error');
-                }
-            });
-        }
-
-        function submitPendudukForm(e) {
-            e.preventDefault();
-
-            const nik = $('#pendudukNik').val().trim();
-            if (!/^\d{16}$/.test(nik)) {
-                Swal.fire('Error!', 'NIK harus 16 digit angka!', 'error');
-                return;
-            }
-
-            const rt = $('#pendudukRt').val().trim();
-            const rw = $('#pendudukRw').val().trim();
-            if (!rt || !rw || !/^\d{1,3}$/.test(rt) || !/^\d{1,3}$/.test(rw)) {
-                Swal.fire('Error!', 'RT dan RW harus angka (max 3 digit)!', 'error');
-                return;
-            }
-
-            const latitude = $('#pendudukLatitude').val().trim();
-            const longitude = $('#pendudukLongitude').val().trim();
-            if (latitude && (isNaN(latitude) || latitude < -90 || latitude > 90)) {
-                Swal.fire('Error!', 'Latitude tidak valid! Harus antara -90 sampai 90', 'error');
-                return;
-            }
-            if (longitude && (isNaN(longitude) || longitude < -180 || longitude > 180)) {
-                Swal.fire('Error!', 'Longitude tidak valid! Harus antara -180 sampai 180', 'error');
-                return;
-            }
-
-            // Set dummy values for hidden fields
-            $('#pendudukForm').append('<input type="hidden" name="tanggal_lahir" value="1990-01-01">');
-            $('#pendudukForm').append('<input type="hidden" name="jenis_kelamin" value="Laki-laki">');
-            $('#pendudukForm').append('<input type="hidden" name="status_perkawinan" value="Belum Kawin">');
-            $('#pendudukForm').append('<input type="hidden" name="pekerjaan" value="Tidak diketahui">');
-
-            const id = $('#pendudukId').val();
-            if (id) {
-                $('#formMethod').val('PUT');
-            }
-
-            $('#submitPendudukBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
-
-            // Submit form normally (not AJAX)
-            $('#pendudukForm').off('submit').submit();
-        }
-
-        // Handle form submission response
-        $(document).ready(function() {
-            // Check for success/error messages from server
-            @if(session('success'))
-                $('#pendudukModal').modal('hide');
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: '{{ session("success") }}',
-                    timer: 3000,
-                    showConfirmButton: false
-                });
-                loadPenduduk($('#searchPenduduk').val());
-            @endif
-
-            @if(session('error'))
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal!',
-                    text: '{{ session("error") }}'
-                });
-            @endif
         });
+    });
 
-        function submitPendudukForm(e) {
-            e.preventDefault();
+    // Undangan pengguna (tetap seperti asli)
+    function submitInviteForm(e) {
+        e.preventDefault();
+        sendInvite();
+    }
 
-            const nik = $('#pendudukNik').val().trim();
-            if (!/^\d{16}$/.test(nik)) {
-                Swal.fire('Error!', 'NIK harus 16 digit angka!', 'error');
-                return;
-            }
+    function sendInvite() {
+        const data = {
+            name: $('#inviteName').val().trim(),
+            email: $('#inviteEmail').val().trim(),
+            role: $('#inviteRole').val()
+        };
+        if (!data.name || !data.email || !data.role) return Swal.fire('Error!', 'Semua field wajib!', 'error');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return Swal.fire('Error!', 'Email salah!', 'error');
 
-            const rt = $('#pendudukRt').val().trim();
-            const rw = $('#pendudukRw').val().trim();
-            if (!rt || !rw || !/^\d{1,3}$/.test(rt) || !/^\d{1,3}$/.test(rw)) {
-                Swal.fire('Error!', 'RT dan RW harus angka (max 3 digit)!', 'error');
-                return;
-            }
-
-            const latitude = $('#pendudukLatitude').val().trim();
-            const longitude = $('#pendudukLongitude').val().trim();
-            if (latitude && (isNaN(latitude) || latitude < -90 || latitude > 90)) {
-                Swal.fire('Error!', 'Latitude tidak valid! Harus antara -90 sampai 90', 'error');
-                return;
-            }
-            if (longitude && (isNaN(longitude) || longitude < -180 || longitude > 180)) {
-                Swal.fire('Error!', 'Longitude tidak valid! Harus antara -180 sampai 180', 'error');
-                return;
-            }
-
-            // Set dummy values for hidden fields
-            $('#pendudukForm').append('<input type="hidden" name="tanggal_lahir" value="1990-01-01">');
-            $('#pendudukForm').append('<input type="hidden" name="jenis_kelamin" value="Laki-laki">');
-            $('#pendudukForm').append('<input type="hidden" name="status_perkawinan" value="Belum Kawin">');
-            $('#pendudukForm').append('<input type="hidden" name="pekerjaan" value="Tidak diketahui">');
-
-            const id = $('#pendudukId').val();
-            if (id) {
-                $('#formMethod').val('PUT');
-            }
-
-            $('#submitPendudukBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
-
-            // Submit form normally (not AJAX)
-            $('#pendudukForm').off('submit').submit();
-        }
-
-        function deletePenduduk(id) {
-            Swal.fire({
-                title: 'Konfirmasi Hapus',
-                text: "Data penduduk akan dihapus permanen!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `{{ url("/penduduk/penduduk") }}/${id}`,
-                        method: 'POST',
-                        data: { _method: 'DELETE' },
-                        success: function(response) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Terhapus!',
-                                text: 'Data penduduk berhasil dihapus',
-                                timer: 2000,
-                                showConfirmButton: false
-                            });
-                            loadPenduduk($('#searchPenduduk').val());
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Error!', 'Gagal menghapus data penduduk', 'error');
-                        }
-                    });
-                }
-            });
-        }
-
-        // Real-time Search untuk Penduduk
-        $('#searchPenduduk').on('input', function() {
-            loadPenduduk($(this).val());
-        });
-
-        // Validasi Input Penduduk
-        $(document).ready(function() {
-            $('#pendudukNik').on('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16);
-            });
-            $('#pendudukRt, #pendudukRw').on('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 3);
-            });
-            $('#pendudukLatitude, #pendudukLongitude').on('input', function() {
-                this.value = this.value.replace(/[^0-9.\-]/g, '');
-            });
-
-            // Geolocation
-            $('#getLocationBtn').on('click', function() {
-                const status = $('#locationStatus');
-                if (navigator.geolocation) {
-                    status.text('Mendapatkan lokasi...').removeClass('text-danger text-success').addClass('text-warning');
-                    navigator.geolocation.getCurrentPosition(
-                        function(position) {
-                            $('#pendudukLatitude').val(position.coords.latitude.toFixed(6));
-                            $('#pendudukLongitude').val(position.coords.longitude.toFixed(6));
-                            status.text('Lokasi berhasil didapat!').removeClass('text-warning').addClass('text-success');
-                        },
-                        function(error) {
-                            status.text('Gagal mendapatkan lokasi').removeClass('text-warning').addClass('text-danger');
-                            console.error('Geolocation error:', error);
-                        }
-                    );
-                } else {
-                    status.text('Browser tidak mendukung geolokasi').addClass('text-danger');
-                }
-            });
-
-            // Form event listeners
-            $('#inviteForm').on('submit', submitInviteForm);
-            $('#pendudukForm').on('submit', submitPendudukForm);
-
-        // Load initial data
-            if ($('#page-users').hasClass('active')) loadUsers();
-            if ($('#page-datamaster').hasClass('active')) loadPenduduk();
-
-
-        });
-
-        // === SETTINGS PAGE FUNCTIONALITY ===
-        // Profile Update
-        $('#profileForm').on('submit', function(e) {
-            e.preventDefault();
-            const btn = $('#saveProfileBtn');
-            const originalText = btn.html();
-
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
-
-            $.ajax({
-                url: '{{ url("/profile") }}',
-                method: 'PATCH',
-                data: $(this).serialize(),
-                success: function(response) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: 'Profil berhasil diperbarui.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    // Update sidebar name if changed
-                    if ($('#name').val() !== '{{ auth()->user()->name }}') {
-                        $('.sidebar .text-gray-600').text($('#name').val());
-                    }
-                },
-                error: function(xhr) {
-                    const error = xhr.responseJSON?.message || 'Terjadi kesalahan saat menyimpan profil.';
-                    Swal.fire('Error!', error, 'error');
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html(originalText);
-                }
-            });
-        });
-
-        // Password Change
-        $('#passwordForm').on('submit', function(e) {
-            e.preventDefault();
-
-            if ($('#password').val() !== $('#password_confirmation').val()) {
-                Swal.fire('Error!', 'Konfirmasi password tidak cocok.', 'error');
-                return;
-            }
-
-            const btn = $('#changePasswordBtn');
-            const originalText = btn.html();
-
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengubah...');
-
-            $.ajax({
-                url: '{{ url("/pengaturan/password") }}',
-                method: 'POST',
-                data: $(this).serialize(),
-                success: function(response) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: 'Password berhasil diubah.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    $('#passwordForm')[0].reset();
-                },
-                error: function(xhr) {
-                    const error = xhr.responseJSON?.message || 'Terjadi kesalahan saat mengubah password.';
-                    Swal.fire('Error!', error, 'error');
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html(originalText);
-                }
-            });
-        });
-
-        // Language Change
-        $('#changeLanguageBtn').on('click', function() {
-            const lang = $('#language').val();
-            const btn = $(this);
-            const originalText = btn.html();
-
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengubah...');
-
-            $.ajax({
-                url: '{{ url("/pengaturan/lang") }}',
-                method: 'POST',
-                data: { lang: lang, _token: '{{ csrf_token() }}' },
-                success: function(response) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: 'Bahasa berhasil diubah. Halaman akan dimuat ulang.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                },
-                error: function(xhr) {
-                    const error = xhr.responseJSON?.message || 'Terjadi kesalahan saat mengubah bahasa.';
-                    Swal.fire('Error!', error, 'error');
-                    btn.prop('disabled', false).html(originalText);
-                }
-            });
-        });
-
-        // Chart dummy data
-        var ctx = document.getElementById('myAreaChart').getContext('2d');
-        var myAreaChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
-                datasets: [{
-                    label: 'Bidang Tersertipikat (Juta)',
-                    data: [45, 58, 68, 75, 80, 82.3],
-                    borderColor: '#4e73df',
-                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
-                    tension: 0.4
-                }]
+        $('#sendInviteBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Membuat...');
+        $.ajax({
+            url: '{{ url("/users/invite") }}',
+            method: 'POST',
+            data: data,
+            success: function(response) {
+                $('#inviteForm')[0].reset();
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: response.message, timer: 2000, showConfirmButton: false })
+                    .then(() => window.open(response.gmail_url, '_blank'));
+                loadUsers();
             },
-            options: {
-                maintainAspectRatio: false,
-                scales: { y: { beginAtZero: false } }
+            error: function(xhr) {
+                Swal.fire('Error!', xhr.responseJSON?.message || 'Gagal membuat user', 'error');
+            },
+            complete: function() {
+                $('#sendInviteBtn').prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Kirim Undangan');
             }
         });
-    </script>
+    }
 
+    // === USER MANAGEMENT (CRUD full AJAX + auto refresh) ===
+    function loadUsers() {
+        $.get('{{ url("/users/list") }}').done(function(response) {
+            let html = '';
+            response.users.forEach((user, index) => {
+                const roleName = user.roles?.[0]?.name || 'user';
+                const roleClass = roleName === 'admin' ? 'danger' : roleName === 'staff' ? 'warning' : 'info';
+                const statusClass = user.is_approved ? 'success' : 'warning';
+                html += `<tr>
+                    <td class="text-center">${index + 1}</td>
+                    <td><strong>${user.name}</strong></td>
+                    <td>${user.email}</td>
+                    <td><span class="badge badge-role badge-${roleClass}">${roleName.toUpperCase()}</span></td>
+                    <td><span class="badge badge-status badge-${statusClass}">${user.is_approved ? 'Disetujui' : 'Pending'}</span></td>
+                    <td>${user.language_preference === 'id' ? 'Indonesia' : 'English'}</td>
+                    <td>${new Date(user.created_at).toLocaleDateString('id-ID')}</td>
+                    <td class="text-center table-actions">
+                        <button class="btn btn-sm btn-warning" onclick="editUser(${user.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+            $('#userTableBody').html(html || '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>');
+
+            if (dataTable) dataTable.destroy();
+            dataTable = $('#usersTable').DataTable({
+                language: { url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json" },
+                pageLength: 10
+            });
+        });
+    }
+
+    function openUserModal(action, userId = null) {
+        $('#userForm')[0].reset();
+        $('#formAction').val(action);
+        if (action === 'add') {
+            $('#userModalTitle').text('Tambah Pengguna Baru');
+            $('#userId').val('');
+            $('#userPassword').prop('required', true);
+            $('#passwordRequired').addClass('form-label-required');
+            $('#passwordHint').text('Min. 6 karakter');
+            $('#submitUserBtn').html('<i class="fas fa-save"></i> Simpan');
+        } else {
+            $('#userModalTitle').text('Edit Pengguna');
+            $('#userPassword').prop('required', false);
+            $('#passwordRequired').removeClass('form-label-required');
+            $('#passwordHint').text('Kosongkan jika tidak ingin ubah password');
+            $('#submitUserBtn').html('<i class="fas fa-save"></i> Update');
+        }
+        $('#userModal').modal('show');
+    }
+
+    function editUser(id) {
+        $.get('{{ url("/users") }}/' + id).done(function(response) {
+            openUserModal('edit');
+            $('#userId').val(response.id);
+            $('#userName').val(response.name);
+            $('#userEmail').val(response.email);
+            $('#userRole').val(response.roles?.[0]?.name || 'user');
+            $('#userLanguage').val(response.language_preference);
+            $('#userApproved').val(response.is_approved ? '1' : '0');
+            $('#userReason').val(response.registration_reason);
+        });
+    }
+
+    $('#userForm').on('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const action = $('#formAction').val();
+        const userId = $('#userId').val();
+        let url = '{{ url("/users") }}';
+        if (action === 'edit') {
+            url += '/' + userId;
+            formData.append('_method', 'PUT');
+        }
+
+        $('#submitUserBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                $('#userModal').modal('hide');
+                Swal.fire({icon: 'success', title: 'Berhasil!', text: response.message || 'Data tersimpan', timer: 2000});
+                loadUsers();
+            },
+            error: function(xhr) {
+                Swal.fire('Error!', xhr.responseJSON?.message || 'Gagal simpan', 'error');
+            },
+            complete: function() {
+                $('#submitUserBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Simpan');
+            }
+        });
+    });
+
+    function deleteUser(id) {
+        Swal.fire({
+            title: 'Yakin hapus?',
+            text: "Data pengguna akan hilang permanen!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, hapus!'
+        }).then(result => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `{{ url("/users/users") }}/${id}`,
+                    method: 'DELETE',
+                    success: function() {
+                        Swal.fire('Terhapus!', '', 'success');
+                        loadUsers();
+                    }
+                });
+            }
+        });
+    }
+
+    // === DATA MASTER PENDUDUK (CRUD full AJAX + auto refresh) ===
+    function loadPenduduk(search = '') {
+        $.get('{{ url("/penduduk/penduduk") }}', { search }).done(function(response) {
+            let html = '';
+            if (response.length === 0) {
+                html = '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>';
+            } else {
+                response.forEach((item, i) => {
+                    html += `<tr>
+                        <td>${i+1}</td>
+                        <td><strong>${item.nik}</strong></td>
+                        <td>${item.nama}</td>
+                        <td>${item.alamat.substring(0,50)}${item.alamat.length > 50 ? '...' : ''}</td>
+                        <td>${item.rt || '-'}/${item.rw || '-'}</td>
+                        <td>${item.provinsi || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editPenduduk(${item.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="deletePenduduk(${item.id})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            }
+            $('#pendudukTableBody').html(html);
+
+            if (pendudukTable) pendudukTable.destroy();
+            pendudukTable = $('#pendudukTable').DataTable({
+                language: { url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json" },
+                pageLength: 10,
+                ordering: false,
+                searching: false
+            });
+        });
+    }
+
+    function openPendudukModal(action, data = null) {
+        $('#pendudukForm')[0].reset();
+        $('#pendudukId').val('');
+        $('#pendudukModalTitle').text(action === 'add' ? 'Tambah Penduduk' : 'Edit Penduduk');
+        if (data) {
+            $('#pendudukId').val(data.id);
+            $('#pendudukNik').val(data.nik);
+            $('#pendudukNama').val(data.nama);
+            $('#pendudukAlamat').val(data.alamat);
+            $('#pendudukRt').val(data.rt);
+            $('#pendudukRw').val(data.rw);
+            $('#pendudukProvinsi').val(data.provinsi);
+            $('#pendudukLatitude').val(data.latitude || '');
+            $('#pendudukLongitude').val(data.longitude || '');
+        }
+        $('#pendudukModal').modal('show');
+    }
+
+    function editPenduduk(id) {
+        $.get(`{{ url("/penduduk/penduduk") }}/${id}`).done(data => openPendudukModal('edit', data));
+    }
+
+    $('#pendudukForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const nik = $('#pendudukNik').val().trim();
+        if (!/^\d{16}$/.test(nik)) return Swal.fire('Error!', 'NIK harus 16 digit angka!', 'error');
+
+        const rt = $('#pendudukRt').val().trim();
+        const rw = $('#pendudukRw').val().trim();
+        if (!rt || !rw || !/^\d{1,3}$/.test(rt) || !/^\d{1,3}$/.test(rw)) return Swal.fire('Error!', 'RT/RW harus angka 1-3 digit!', 'error');
+
+        const lat = $('#pendudukLatitude').val().trim();
+        const lng = $('#pendudukLongitude').val().trim();
+        if (lat && (isNaN(lat) || lat < -90 || lat > 90)) return Swal.fire('Error!', 'Latitude salah!', 'error');
+        if (lng && (isNaN(lng) || lng < -180 || lng > 180)) return Swal.fire('Error!', 'Longitude salah!', 'error');
+
+        // Dummy fields tetap ditambahkan
+        $(this).append('<input type="hidden" name="tanggal_lahir" value="1990-01-01">');
+        $(this).append('<input type="hidden" name="jenis_kelamin" value="Laki-laki">');
+        $(this).append('<input type="hidden" name="status_perkawinan" value="Belum Kawin">');
+        $(this).append('<input type="hidden" name="pekerjaan" value="Tidak diketahui">');
+
+        const id = $('#pendudukId').val();
+        const url = id ? `{{ url("/penduduk/penduduk") }}/${id}` : '{{ url("/penduduk/penduduk") }}';
+        const method = id ? 'PUT' : 'POST';
+
+        $('#submitPendudukBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+        $.ajax({
+            url: url,
+            method: method,
+            data: new FormData(this),
+            processData: false,
+            contentType: false,
+            success: function() {
+                $('#pendudukModal').modal('hide');
+                Swal.fire('Sukses!', 'Data penduduk tersimpan', 'success');
+                loadPenduduk($('#searchPenduduk').val());
+            },
+            error: function() {
+                Swal.fire('Error!', 'Gagal menyimpan penduduk', 'error');
+            },
+            complete: function() {
+                $('#submitPendudukBtn').prop('disabled', false).html('Simpan');
+            }
+        });
+    });
+
+    function deletePenduduk(id) {
+        Swal.fire({
+            title: 'Yakin hapus?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, hapus!'
+        }).then(result => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `{{ url("/penduduk/penduduk") }}/${id}`,
+                    method: 'DELETE',
+                    success: function() {
+                        Swal.fire('Terhapus!', '', 'success');
+                        loadPenduduk($('#searchPenduduk').val());
+                    }
+                });
+            }
+        });
+    }
+
+    // === SETTINGS PAGE (semua fungsi tetap utuh) ===
+    $('#profileForm').on('submit', function(e) {
+        e.preventDefault();
+        const btn = $('#saveProfileBtn');
+        const original = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
+        $.ajax({
+            url: '{{ url("/profile") }}',
+            method: 'PATCH',
+            data: $(this).serialize(),
+            success: function() {
+                Swal.fire({icon: 'success', title: 'Berhasil!', text: 'Profil diperbarui', timer: 2000});
+                if ($('#name').val() !== '{{ auth()->user()->name }}') $('.sidebar .text-gray-600').text($('#name').val());
+            },
+            error: function(xhr) { Swal.fire('Error!', xhr.responseJSON?.message || 'Gagal update profil', 'error'); },
+            complete: () => btn.prop('disabled', false).html(original)
+        });
+    });
+
+    $('#passwordForm').on('submit', function(e) {
+        e.preventDefault();
+        if ($('#password').val() !== $('#password_confirmation').val()) return Swal.fire('Error!', 'Konfirmasi password beda!', 'error');
+
+        const btn = $('#changePasswordBtn');
+        const original = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengubah...');
+
+        $.ajax({
+            url: '{{ url("/pengaturan/password") }}',
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function() {
+                Swal.fire({icon: 'success', title: 'Berhasil!', text: 'Password diubah', timer: 2000});
+                $('#passwordForm')[0].reset();
+            },
+            error: function(xhr) { Swal.fire('Error!', xhr.responseJSON?.message || 'Gagal ubah password', 'error'); },
+            complete: () => btn.prop('disabled', false).html(original)
+        });
+    });
+
+    $('#changeLanguageBtn').on('click', function() {
+        const lang = $('#language').val();
+        const btn = $(this);
+        const original = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mengubah...');
+
+        $.ajax({
+            url: '{{ url("/pengaturan/lang") }}',
+            method: 'POST',
+            data: { lang: lang, _token: '{{ csrf_token() }}' },
+            success: function() {
+                Swal.fire({icon: 'success', title: 'Berhasil!', text: 'Bahasa diubah. Reload...', timer: 2000});
+                setTimeout(() => location.reload(), 1500);
+            },
+            error: function(xhr) {
+                Swal.fire('Error!', xhr.responseJSON?.message || 'Gagal ubah bahasa', 'error');
+                btn.prop('disabled', false).html(original);
+            }
+        });
+    });
+
+    // Chart (tetap ada)
+    var ctx = document.getElementById('myAreaChart').getContext('2d');
+    var myAreaChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
+            datasets: [{
+                label: 'Bidang Tersertipikat (Juta)',
+                data: [45, 58, 68, 75, 80, 82.3],
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: false } }
+        }
+    });
+</script>
 </body>
 </html>

@@ -20,7 +20,7 @@
     <!-- ================== KIRI: BACKGROUND GEDUNG SUPER LUAS ================== -->
     <!-- GANTI LINK INI: Foto gedung kantor ATR/BPN atau gedung pertanahan resmi -->
     <div class="relative hidden lg:block flex-[2.4] bg-cover bg-center"
-         style="background-image: url('https://files.catbox.moe/enfj07.jpg');">
+         style="background-image: url('{{ asset('sbadmin/img/mount-agung-volcano-rice-fields-bali-indonesia-crescent-3000x3974-1107.jpg') }}');">
         
         <div class="absolute inset-0 flex flex-col justify-between p-16 text-white">
 <br>
@@ -39,19 +39,24 @@
 
             <!-- GANTI LINK INI: Logo resmi Kementerian ATR/BPN (PNG transparan) -->
             <div class="text-center">
-                <img src="https://files.catbox.moe/9dwk35.png" alt="ATR/BPN" class="h-24" height="96">
+                <img src="{{ asset('sbadmin/img/Logo_BPN-KemenATR_(2017).png') }}" alt="ATR/BPN" class="h-24" height="96">
             </div>
         </div>
     </div>
 
     <!-- ================== KANAN: FORM LEBIH RAMMING + BISA SCROLL ================== -->
     <div class="flex-1 flex items-center justify-center p-6 lg:p-12 relative">
+        <!-- Back to Frontend Button -->
+        <a href="/" class="absolute top-4 left-4 bg-white/90 hover:bg-white text-blue-600 hover:text-blue-700 font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition duration-200 flex items-center space-x-2 z-10">
+            <i class="fas fa-arrow-left"></i>
+            <span>Kembali ke Menu Utama</span>
+        </a>
         <div class="absolute top-4 left-4 text-white text-lg font-bold opacity-70">devmochrzkyy</div>
         <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-10 lg:p-12 max-h-screen overflow-y-auto">
 
             <!-- GANTI LINK INI: Logo instansi / universitas / proyek (logo di atas form) -->
             <div class="flex justify-center mb-10">
-                <img src="https://files.catbox.moe/k9gqiy.png" alt="Logo Instansi 1" class="h-40" height="160">
+                <img src="{{ asset('sbadmin/img/20251208_184230.png') }}" alt="Logo Instansi 1" class="h-40" height="160">
             </div>
 
             <h2 class="text-center text-4xl lg:text-5xl font-black text-gray-800 mb-3">

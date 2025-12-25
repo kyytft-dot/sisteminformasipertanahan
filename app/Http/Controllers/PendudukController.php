@@ -9,7 +9,15 @@ use Illuminate\Support\Facades\Validator;
 class PendudukController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display the web page for CRUD
+     */
+    public function page()
+    {
+        return view('penduduk.index');
+    }
+
+    /**
+     * Display a listing of the resource (for API/DataTables)
      */
     public function index()
     {
@@ -62,7 +70,23 @@ class PendudukController extends Controller
         }
 
         try {
-            $penduduk = Penduduk::create($request->all());
+            // PERBAIKAN: Handle empty fields - convert empty string to null
+            $data = $request->all();
+            
+            // Array field yang boleh null
+            $nullableFields = [
+                'latitude', 'longitude', 'tanggal_lahir', 'jenis_kelamin',
+                'status_perkawinan', 'pekerjaan', 'agama', 'kelurahan',
+                'kecamatan', 'kota', 'telepon', 'email'
+            ];
+            
+            foreach ($nullableFields as $field) {
+                if (isset($data[$field]) && ($data[$field] === '' || $data[$field] === null)) {
+                    $data[$field] = null;
+                }
+            }
+            
+            $penduduk = Penduduk::create($data);
             
             return response()->json([
                 'success' => true,
@@ -113,8 +137,8 @@ class PendudukController extends Controller
         $validator = Validator::make($request->all(), [
             'nik' => 'required|string|size:16|unique:penduduk,nik,' . $id,
             'nama' => 'required|string|max:100',
-            'tanggal_lahir' => 'required|date|before:today',
-            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'tanggal_lahir' => 'nullable|date|before:today',
+            'jenis_kelamin' => 'nullable|in:Laki-laki,Perempuan',
             'alamat' => 'required|string',
             'rt' => 'nullable|string|max:3',
             'rw' => 'nullable|string|max:3',
@@ -124,7 +148,7 @@ class PendudukController extends Controller
             'provinsi' => 'nullable|string|max:100',
             'telepon' => 'nullable|string|max:15',
             'email' => 'nullable|email|max:100',
-            'status_perkawinan' => 'required|in:Belum Kawin,Kawin,Cerai Hidup,Cerai Mati',
+            'status_perkawinan' => 'nullable|in:Belum Kawin,Kawin,Cerai Hidup,Cerai Mati',
             'pekerjaan' => 'nullable|string|max:100',
             'agama' => 'nullable|string|max:50',
             'latitude' => 'nullable|numeric|between:-90,90',
@@ -134,11 +158,8 @@ class PendudukController extends Controller
             'nik.size' => 'NIK harus 16 digit',
             'nik.unique' => 'NIK sudah terdaftar',
             'nama.required' => 'Nama wajib diisi',
-            'tanggal_lahir.required' => 'Tanggal lahir wajib diisi',
             'tanggal_lahir.before' => 'Tanggal lahir harus sebelum hari ini',
-            'jenis_kelamin.required' => 'Jenis kelamin wajib diisi',
             'alamat.required' => 'Alamat wajib diisi',
-            'status_perkawinan.required' => 'Status perkawinan wajib diisi',
             'latitude.numeric' => 'Latitude harus berupa angka',
             'latitude.between' => 'Latitude harus antara -90 sampai 90',
             'longitude.numeric' => 'Longitude harus berupa angka',
@@ -154,7 +175,23 @@ class PendudukController extends Controller
         }
 
         try {
-            $penduduk->update($request->all());
+            // PERBAIKAN: Handle empty fields - convert empty string to null
+            $data = $request->all();
+            
+            // Array field yang boleh null
+            $nullableFields = [
+                'latitude', 'longitude', 'tanggal_lahir', 'jenis_kelamin',
+                'status_perkawinan', 'pekerjaan', 'agama', 'kelurahan',
+                'kecamatan', 'kota', 'telepon', 'email'
+            ];
+            
+            foreach ($nullableFields as $field) {
+                if (isset($data[$field]) && ($data[$field] === '' || $data[$field] === null)) {
+                    $data[$field] = null;
+                }
+            }
+            
+            $penduduk->update($data);
             
             return response()->json([
                 'success' => true,
@@ -188,5 +225,38 @@ class PendudukController extends Controller
                 'message' => 'Gagal menghapus data: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get GeoJSON for map
+     */
+    public function geojson()
+    {
+        $penduduk = Penduduk::whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get();
+
+        $features = $penduduk->map(function ($item) {
+            return [
+                'type' => 'Feature',
+                'properties' => [
+                    'id' => $item->id,
+                    'nik' => $item->nik,
+                    'nama' => $item->nama,
+                    'alamat' => $item->alamat,
+                    'jenis_kelamin' => $item->jenis_kelamin,
+                    'telepon' => $item->telepon,
+                ],
+                'geometry' => [
+                    'type' => 'Point',
+                    'coordinates' => [(float)$item->longitude, (float)$item->latitude]
+                ]
+            ];
+        });
+
+        return response()->json([
+            'type' => 'FeatureCollection',
+            'features' => $features
+        ]);
     }
 }

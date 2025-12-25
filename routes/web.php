@@ -15,32 +15,11 @@ use App\Http\Controllers\RealtimeNotificationController;
 // === TAMBAHAN BARU UNTUK PROFIL & FOTO & PASSWORD ===
 use App\Http\Controllers\ProfileController;
 
-Route::middleware(['auth'])->group(function () {
-
-    // 2. ROUTE GEOJSON UNTUK MINI MAP DI DASHBOARD & PETA
-    Route::prefix('penduduk')->name('penduduk.')->group(function () {
-        Route::get('/penduduk', [PendudukController::class, 'geojson'])->name('penduduk');
-    });
-
-    Route::prefix('polygon')->name('polygon.')->group(function () {
-        Route::get('/polygon', [PolygonController::class, 'geojson'])->name('polygon');
-    });
-
-    Route::prefix('polyline')->name('polyline.')->group(function () {
-        Route::get('/polyline', [PolylineController::class, 'geojson'])->name('polyline');
-    });
-
-    Route::prefix('marker')->name('marker.')->group(function () {
-        Route::get('/marker', [MarkerController::class, 'geojson'])->name('marker');
-    });
-
-});
-
 // ========================================
 // 1. LOGIN & LOGOUT
 // ========================================
 Route::get('/login', function () {
-    if (Auth::check()) return redirect('/');
+    if (Auth::check()) return redirect('/dashboard');
     return view('login');
 })->name('login');
 
@@ -52,10 +31,13 @@ Route::post('/login', function (Request $request) {
 
     if (Auth::attempt($credentials)) {
         $request->session()->regenerate();
-        return redirect('/dashboard');
+        return redirect()->intended('/dashboard');
     }
-    return back()->with('error', 'Email atau password salah!');
-});
+    
+    return back()->withErrors([
+        'email' => 'Email atau password salah!',
+    ])->withInput($request->only('email'));
+})->name('login.post');
 
 Route::post('/logout', function (Request $request) {
     Auth::logout();
@@ -77,19 +59,17 @@ Route::middleware('auth')->group(function () {
     // === USER MASYARAKAT HANYA BISA INI ===
     Route::get('/peta', fn() => view('lihat-peta'));
     Route::get('/ten', fn() => view('tentang'));
-    // UPDATE: Chatbot sekarang BISA DIAKSES TANPA LOGIN (PUBLIC) agar tombol di landing page bisa langsung masuk
-    // Route::get('/chatbot', fn() => view('chatbot'));
 
     // ===================================================================
     // PENGATURAN PROFIL — BARU & BENAR (PAKAI PATCH (TIDAK ERROR LAGI!)
     // ===================================================================
     Route::get('/pengaturan', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');           // PATCH
-    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo');     // POST foto
-    Route::post('/password/update', [ProfileController::class, 'updatePassword'])->name('password.update'); // POST password
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo');
+    Route::post('/password/update', [ProfileController::class, 'updatePassword'])->name('password.update');
 
     // ===================================================================
-    // ROUTE LAMA TETAP DIPER TAHAN KAN (TIDAK DIHAPUS SATU PUN!)
+    // ROUTE LAMA TETAP DIPERTAHANKAN (TIDAK DIHAPUS SATU PUN!)
     // ===================================================================
     Route::post('/pengaturan/profile', [App\Http\Controllers\PengaturanController::class, 'updateProfile']);
     Route::post('/pengaturan/password', [App\Http\Controllers\PengaturanController::class, 'updatePassword']);
@@ -110,15 +90,15 @@ Route::middleware('auth')->group(function () {
             abort(403, 'Akses ditolak');
         }
         return view('users.iframe');
-    })->middleware('auth')->name('users.index');
+    })->name('users.index');
 
-    Route::get('/users/list', [App\Http\Controllers\UserManagementController::class, 'list'])->middleware('auth');
-    Route::get('/users/{id}', [App\Http\Controllers\UserManagementController::class, 'show'])->middleware('auth');
-    Route::post('/users', [App\Http\Controllers\UserManagementController::class, 'store'])->middleware('auth');
-    Route::post('/users/invite', [App\Http\Controllers\UserManagementController::class, 'invite'])->middleware('auth');
-    Route::get('/users/invite/manual/{inviteCode}', [App\Http\Controllers\UserManagementController::class, 'manualInvite'])->middleware('auth');
-    Route::put('/users/{id}', [App\Http\Controllers\UserManagementController::class, 'update'])->middleware('auth');
-    Route::delete('/users/{id}', [App\Http\Controllers\UserManagementController::class, 'destroy'])->middleware('auth');
+    Route::get('/users/list', [App\Http\Controllers\UserManagementController::class, 'list']);
+    Route::get('/users/{id}', [App\Http\Controllers\UserManagementController::class, 'show']);
+    Route::post('/users', [App\Http\Controllers\UserManagementController::class, 'store']);
+    Route::post('/users/invite', [App\Http\Controllers\UserManagementController::class, 'invite']);
+    Route::get('/users/invite/manual/{inviteCode}', [App\Http\Controllers\UserManagementController::class, 'manualInvite']);
+    Route::put('/users/{id}', [App\Http\Controllers\UserManagementController::class, 'update']);
+    Route::delete('/users/{id}', [App\Http\Controllers\UserManagementController::class, 'destroy']);
 
     Route::get('/datnah', function () {
         if (Auth::user()->hasRole('admin|staff')) {
@@ -154,6 +134,23 @@ Route::middleware('auth')->group(function () {
     })->name('data.index')->middleware('role:admin');
 
     Route::resource('jenis-tanah', App\Http\Controllers\JenisTanahController::class)->middleware('role:admin');
+
+    // 2. ROUTE GEOJSON UNTUK MINI MAP DI DASHBOARD & PETA
+    Route::prefix('penduduk')->name('penduduk.')->group(function () {
+        Route::get('/penduduk', [PendudukController::class, 'geojson'])->name('penduduk');
+    });
+
+    Route::prefix('polygon')->name('polygon.')->group(function () {
+        Route::get('/polygon', [PolygonController::class, 'geojson'])->name('polygon');
+    });
+
+    Route::prefix('polyline')->name('polyline.')->group(function () {
+        Route::get('/polyline', [PolylineController::class, 'geojson'])->name('polyline');
+    });
+
+    Route::prefix('marker')->name('marker.')->group(function () {
+        Route::get('/marker', [MarkerController::class, 'geojson'])->name('marker');
+    });
 
     // Penduduk, Polygon, Polyline, Marker → HANYA ADMIN
     Route::prefix('penduduk')->group(function () {
@@ -199,14 +196,12 @@ Route::get('/', function () {
     return view('frontend');
 })->name('frontend');
 
-// === UPDATE: ROUTE CHATBOT DIPINDAHKAN KE PUBLIC AGAR BISA DIAKSES DARI LANDING PAGE TANPA LOGIN ===
+// === ROUTE CHATBOT DIPINDAHKAN KE PUBLIC AGAR BISA DIAKSES DARI LANDING PAGE TANPA LOGIN ===
 Route::get('/chatbot', function () {
     return view('chatbot');
 })->name('chatbot');
 
-// ========================================
-// 4. SEMUA YANG BELUM LOGIN → KE LOGIN
-// ========================================
-Route::get('{any}', function () {
-    return redirect('/login');
-})->where('any', '.*')->middleware('guest');
+ // Halaman CRUD Penduduk (hanya admin)
+    Route::get('/master-penduduk', [App\Http\Controllers\PendudukController::class, 'page'])
+        ->middleware('role:admin')
+        ->name('master.penduduk');
